@@ -1,0 +1,24 @@
+# DarkIce configuration template (Icecast 2)
+# StreamPi writes this file; server, password, mountPoint, name can be set in .env instead.
+
+[general]
+duration        = 0
+bufferSecs      = 5
+reconnect       = yes
+
+[input]
+device          = plughw:0,0
+sampleRate      = 44100
+bitsPerSample   = 16
+channel         = 1
+
+[icecast2-0]
+bitrateMode     = cbr
+format          = mp3
+bitrate         = 128
+quality         = 0.8
+server          = your-icecast.example.com
+port            = 8000
+password        = your-password
+mountPoint      = live.mp3
+name            = My Stream

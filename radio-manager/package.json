@@ -1,0 +1,22 @@
+{
+  "name": "radio-manager",
+  "version": "1.0.0",
+  "description": "Web management interface for DarkIce internet radio on Raspberry Pi Zero 2 W",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-session": "^1.18.0",
+    "helmet": "^7.1.0",
+    "multer": "^1.4.5-lts.1"
+  },
+  "optionalDependencies": {},
+  "private": true
+}

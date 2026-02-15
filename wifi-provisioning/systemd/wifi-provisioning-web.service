@@ -1,0 +1,20 @@
+[Unit]
+Description=WiFi provisioning web UI (started when AP is active)
+After=network.target
+# Do not start automatically; started by wifi-watchdog when AP is up
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/wifi-provisioning
+Environment=WIFI_PROVISIONING_STATE=/run/wifi-provisioning
+Environment=WIFI_PROVISIONING_SCRIPT_DIR=/opt/wifi-provisioning
+Environment=FLASK_APP=app.py
+Environment=WIFI_PROVISIONING_PORT=8080
+ExecStart=/usr/bin/python3 -m flask run --host=0.0.0.0 --port=8080
+Restart=no
+# Port 8080 so nginx can keep port 80; no root needed
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target

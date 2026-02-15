@@ -1,0 +1,16 @@
+[Unit]
+Description=WiFi provisioning: check connectivity and start AP if no network
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/wifi-provisioning/wifi-watchdog.sh
+Environment=SCRIPT_DIR=/opt/wifi-provisioning
+Environment=STATE_DIR=/run/wifi-provisioning
+Environment=CHECK_INTERVAL=90
+Environment=FAILED_CHECKS_BEFORE_AP=2
+User=root
+
+[Install]
+WantedBy=multi-user.target

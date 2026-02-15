@@ -1,0 +1,17 @@
+[Unit]
+Description=DarkIce GPIO button control (start/stop streaming)
+After=darkice.service
+# Only running when streaming mode is SWITCH; started/stopped by Radio Manager
+
+[Service]
+Type=simple
+# Run as user (not root) to match SD card working version; audio device access ok
+User=__RUN_AS_USER__
+WorkingDirectory=/tmp
+ExecStart=/usr/bin/python3 __INSTALL_DIR__/scripts/darkice_gpio.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+# Do not enable at boot; Radio Manager starts this when mode is SWITCH
+WantedBy=multi-user.target

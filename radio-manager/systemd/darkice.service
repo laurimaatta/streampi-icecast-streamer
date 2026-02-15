@@ -1,0 +1,17 @@
+[Unit]
+Description=DarkIce live audio streamer
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Run as user (not root) to match SD card working version
+User=__RUN_AS_USER__
+Environment=DARKICE_CFG=/etc/darkice.cfg
+ExecStart=/usr/bin/darkice -c /etc/darkice.cfg
+Restart=on-failure
+RestartSec=5
+
+[Install]
+# Do not enable at boot; Radio Manager starts/stops this
+WantedBy=multi-user.target

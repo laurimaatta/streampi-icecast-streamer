@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StreamPi</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="loginOverlay" class="login-overlay" hidden>
+    <div class="login-card">
+      <h1>StreamPi</h1>
+      <form id="formLogin">
+        <label>Käyttäjätunnus <input type="text" name="username" placeholder="Käyttäjätunnus" autocomplete="username"></label>
+        <label>Salasana <input type="password" name="password" placeholder="••••••••" autocomplete="current-password"></label>
+        <p id="loginError" class="login-error" style="display:none;"></p>
+        <button type="submit">Kirjaudu</button>
+      </form>
+    </div>
+  </div>
+  <div id="appContent">
+  <header class="header">
+    <h1>StreamPi</h1>
+    <div class="header-right">
+      <div class="status-pill" id="streamStatus" aria-live="polite">—</div>
+      <button type="button" id="btnLogout" class="btn-logout" title="Kirjaudu ulos">Kirjaudu ulos</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button type="button" class="tab active" role="tab" id="tab-streaming" aria-selected="true" aria-controls="panel-streaming">Lähetys</button>
+    <button type="button" class="tab" role="tab" id="tab-audio" aria-selected="false" aria-controls="panel-audio">Ääni</button>
+    <button type="button" class="tab" role="tab" id="tab-system" aria-selected="false" aria-controls="panel-system">Järjestelmä</button>
+  </nav>
+
+  <main>
+    <section id="panel-streaming" class="panel active" role="tabpanel" aria-labelledby="tab-streaming">
+      <div class="card">
+        <h2>Lähetyksen ohjaus</h2>
+        <div class="stream-control">
+          <div class="mode-group">
+            <label>Tila</label>
+            <div class="radio-group">
+              <label><input type="radio" name="mode" value="ON"> Päällä</label>
+              <label><input type="radio" name="mode" value="OFF"> Pois</label>
+              <label><input type="radio" name="mode" value="SWITCH"> Laitteen nappi</label>
+            </div>
+          </div>
+          <div class="btn-group">
+            <button type="button" id="btnStart">Käynnistä</button>
+            <button type="button" id="btnStop">Pysäytä</button>
+            <button type="button" id="btnRestart">Käynnistä uudelleen</button>
+          </div>
+          <p id="streamSwitchHint" class="muted small" style="display:none;">Käytä laitteen nappia (GPIO) lähetyksen käynnistämiseen ja pysäyttämiseen.</p>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Lähetyksen asetukset</h2>
+        <p class="muted">Tallenna muutokset ja käynnistä lähetys uudelleen tarvittaessa. Palvelin ja salasana voidaan asettaa myös .env-tiedostoon.</p>
+        <p id="envNote" class="muted small" style="display:none;">Palvelin, mount-piste ja salasana haetaan .env-tiedostosta.</p>
+        <form id="formDarkice" class="form-grid">
+          <label>Palvelin <input type="text" name="server" placeholder="icecast.example.com"></label>
+          <label>Portti <input type="number" name="port" min="1" max="65535" placeholder="8000"></label>
+          <label>Mount-piste <input type="text" name="mountPoint" placeholder="live.mp3"></label>
+          <label>Salasana <input type="password" name="password" placeholder="••••••••"></label>
+          <label>Lähetyksen nimi <input type="text" name="name" placeholder="Oma lähetys"></label>
+          <label>Bittinopeus (kbps) <input type="number" name="bitrate" min="32" max="320" placeholder="128"></label>
+          <label>Näytteenottotaajuus <select name="sampleRate">
+            <option value="44100">44100 Hz</option>
+            <option value="48000">48000 Hz</option>
+            <option value="22050">22050 Hz</option>
+            <option value="16000">16000 Hz</option>
+          </select></label>
+          <label>Kanavat <select name="channel">
+            <option value="1">Mono (1 kanava) – suositeltu puheelle</option>
+            <option value="2">Stereo (2 kanavaa)</option>
+          </select></label>
+          <label>Äänilähde <select name="device"></select></label>
+          <div class="form-actions">
+            <button type="submit">Tallenna asetukset</button>
+            <button type="button" id="btnRestartAfterSave">Tallenna ja käynnistä lähetys uudelleen</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section id="panel-audio" class="panel" role="tabpanel" aria-labelledby="tab-audio" hidden>
+      <div class="card">
+        <h2>Äänen säätö</h2>
+        <p class="muted">Mikseriasetukset. Muutokset tulevat voimaan heti. Tallenna nykyinen tila, jotta asetukset säilyvät käynnistyksessä.</p>
+        <p id="alsaStateIndicator" class="muted small" aria-live="polite">—</p>
+        <div class="alsa-groups">
+          <div class="alsa-group" id="alsaGroupCapture">
+            <h3>Tallennus</h3>
+            <div id="audioControlsCapture" class="audio-controls-grid"></div>
+          </div>
+          <div class="alsa-group" id="alsaGroupPlayback">
+            <h3>Toisto</h3>
+            <div id="audioControlsPlayback" class="audio-controls-grid"></div>
+          </div>
+          <div class="alsa-group" id="alsaGroupALC">
+            <h3>Automaattinen tasaus (ALC)</h3>
+            <p class="muted small">Automaattinen äänenvoimakkuuden säätö tallennuksessa.</p>
+            <div id="audioControlsALC" class="audio-controls-grid"></div>
+          </div>
+        </div>
+        <div class="btn-group">
+          <button type="button" id="btnApplyAlsaDefaults">Asenna äänen oletukset (IQaudIO)</button>
+          <button type="button" id="btnStoreAlsa">Tallenna nykyinen äänitila</button>
+          <button type="button" id="btnRestoreAlsa">Palauta tallennettu äänitila</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-system" class="panel" role="tabpanel" aria-labelledby="tab-system" hidden>
+      <div class="card">
+        <h2>Web-kirjautuminen</h2>
+        <p class="muted small">Käyttäjätunnus on aina <strong>admin</strong>. Oletussalasana <strong>streamPi</strong> – vaihda heti omaan.</p>
+        <form id="formAuth" class="form-grid">
+          <label>Nykyinen salasana <input type="password" name="authCurrentPassword" placeholder="••••••••" autocomplete="current-password"></label>
+          <label>Uusi salasana <input type="password" name="authNewPassword" placeholder="••••••••" autocomplete="new-password"></label>
+          <label>Uusi salasana uudestaan <input type="password" name="authNewPasswordConfirm" placeholder="••••••••" autocomplete="new-password"></label>
+          <div class="form-actions">
+            <button type="submit">Vaihda kirjautumistiedot</button>
+            <button type="button" id="btnAuthRemove">Poista kirjautuminen</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Varmuuskopio ja palautus</h2>
+        <div class="backup-actions">
+          <button type="button" id="btnExport">Lataa varmuuskopio (JSON)</button>
+          <label class="file-label"><input type="file" id="importFile" accept=".json"> Tuo tiedostosta</label>
+        </div>
+        <hr>
+        <h3>Paikalliset varmuuskopiot</h3>
+        <button type="button" id="btnSaveLocal">Luo varmuuskopio nyt</button>
+        <ul id="localBackupList" class="backup-list"></ul>
+        <div id="restoreRow" class="restore-row" style="display:none">
+          <label>Palauta: <select id="restoreSelect"></select></label>
+          <button type="button" id="btnRestoreLocal">Palauta</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="httpsHint" class="https-hint muted small">
+    Jos selain varoittaa yhteydestä, asenna CA-sertifikaatti – ohjeet asennusohjeessa.
+  </div>
+  <div id="toast" class="toast" aria-live="polite"></div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

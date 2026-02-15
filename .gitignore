@@ -1,0 +1,34 @@
+# Environment and secrets (do not commit)
+.env
+*.env
+!.env.example
+
+# Node
+node_modules/
+npm-debug.log*
+.npm
+
+# App data (local / on Pi)
+.radio-manager/
+*-manager-data/
+certs/
+backups/
+*.state
+*.log
+logs/
+
+# OS and editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Install config (hostname, user, auth – do not commit)
+install.conf
+.install.conf
+
+# Backup and temp (do not commit)
+*.bak
+*.tmp
+ca.pem

@@ -1,0 +1,11 @@
+[Unit]
+Description=Run WiFi provisioning watchdog every 90 seconds
+After=network-online.target
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=90
+Persistent=yes
+
+[Install]
+WantedBy=timers.target

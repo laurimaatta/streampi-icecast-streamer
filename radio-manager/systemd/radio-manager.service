@@ -1,0 +1,21 @@
+[Unit]
+Description=Radio Manager Web UI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Install script replaces __RUN_AS_USER__ and __INSTALL_DIR__ (default: pi; use ./install.sh user for user)
+User=__RUN_AS_USER__
+WorkingDirectory=__INSTALL_DIR__
+ExecStart=/usr/bin/node server/index.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=PORT=8443
+# Data dir for app-config.json, backups, certs (install script replaces __DATA_DIR__)
+Environment=RADIO_MANAGER_DATA=__DATA_DIR__
+Environment=ALSA_CARD=__ALSA_CARD__
+
+[Install]
+WantedBy=multi-user.target

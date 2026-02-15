@@ -1,0 +1,16 @@
+[Unit]
+Description=Äänikortin nappi (GPIO27) → käynnistä AP-tila
+After=multi-user.target
+# Ei vaadi verkkoa; kuuntelee vain nappia
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/wifi-provisioning
+ExecStart=/usr/bin/python3 /opt/wifi-provisioning/button-to-ap.py
+Restart=always
+RestartSec=5
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
