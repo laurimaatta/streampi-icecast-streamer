@@ -9,8 +9,8 @@ const logger = require('./logger');
 
 const CARD = ALSA_CARD;
 
-function amixer(...args) {
-  const argv = ['-c', CARD, ...args];
+function amixerWithCard(card, ...args) {
+  const argv = ['-c', String(card), ...args];
   try {
     const result = spawnSync('amixer', argv, { encoding: 'utf8', timeout: 10000 });
     const out = (result.stdout || '').trim();
@@ -27,11 +27,15 @@ function amixer(...args) {
   }
 }
 
+function amixer(...args) {
+  return amixerWithCard(CARD, ...args);
+}
+
 /**
- * List simple mixer controls (names only).
+ * List simple mixer controls (names only). Optional card override.
  */
-function listControls() {
-  const r = amixer('scontrols');
+function listControlsWithCard(card) {
+  const r = amixerWithCard(card, 'scontrols');
   if (!r.ok) return [];
   const names = [];
   const re = /Simple mixer control '([^']+)'/g;
@@ -40,11 +44,15 @@ function listControls() {
   return names;
 }
 
+function listControls() {
+  return listControlsWithCard(CARD);
+}
+
 /**
- * Get current value(s) for a control. Returns { name, values: [ ... ], dB: [...] if available }.
+ * Get current value(s) for a control. Returns { name, values: [ ... ], dB: [...] if available }. Optional card override.
  */
-function getControl(name) {
-  const r = amixer('get', name);
+function getControlWithCard(card, name) {
+  const r = amixerWithCard(card, 'get', name);
   if (!r.ok) return null;
   const values = [];
   const dB = [];
@@ -63,6 +71,10 @@ function getControl(name) {
   const reDb = /dB ([-+]?\d+\.\d+)/g;
   while ((m = reDb.exec(r.out)) !== null) dB.push(parseFloat(m[1]));
   return { name, values, dB: dB.length ? dB : undefined, min: minVal, max: maxVal };
+}
+
+function getControl(name) {
+  return getControlWithCard(CARD, name);
 }
 
 /**
@@ -97,30 +109,41 @@ function listCards() {
  * Returns same shape as before: { controlName: { name, values, min, max, ... } }.
  */
 /**
- * Get relevant ALSA controls for AUX-focused setup.
- * Filters to show only important controls for speech/sermon recording via AUX input.
- * Hides unused playback controls (Headphone, Lineout, ToneGen) and Mic controls.
+ * Get relevant ALSA controls for a given card. Filters for AUX/ADC/ALSA etc.
+ * Returns { controlName: { name, values, min, max, ... } }.
  */
-function getRelevantControls() {
-  const names = listControls();
-  // Relevant controls for AUX input recording
+function getRelevantControlsForCard(card) {
+  const names = listControlsWithCard(card);
   const relevantPatterns = [
-    /^Aux/i,           // Aux Volume, Aux Switch, Aux ZC, Aux Gain Ramping
-    /^ADC/i,           // ADC Volume, ADC HPF (high-pass filter), ADC controls
-    /^ALC/i,           // Automatic Level Control
-    /^Input/i,         // Input source selection
-    /^Capture/i,       // Generic capture controls
-    /^PGA/i,           // Programmable Gain Amplifier (if present)
+    /^Aux/i, /^ADC/i, /^ALC/i, /^Input/i, /^Capture/i, /^PGA/i,
   ];
-  
   const out = {};
   for (const n of names) {
-    // Check if control name matches any relevant pattern
-    const isRelevant = relevantPatterns.some(pattern => pattern.test(n));
-    if (!isRelevant) continue;
-    
-    const c = getControl(n);
+    if (!relevantPatterns.some((p) => p.test(n))) continue;
+    const c = getControlWithCard(card, n);
     if (c && c.values && c.values.length > 0) out[n] = c;
+  }
+  return out;
+}
+
+/**
+ * Get relevant ALSA controls. Uses configured card; if none found (e.g. IQaudIO on card 1), tries card 1.
+ */
+function getRelevantControls() {
+  let out = getRelevantControlsForCard(CARD);
+  if (Object.keys(out).length === 0 && CARD !== '1') {
+    out = getRelevantControlsForCard('1');
+    if (Object.keys(out).length > 0) {
+      logger.info('ALSA: no controls on card ' + CARD + ', using card 1 (set ALSA_CARD=1 if needed)');
+    }
+  }
+  if (Object.keys(out).length === 0) {
+    // Last resort: show all controls on configured card so UI is not empty
+    const names = listControls();
+    for (const n of names) {
+      const c = getControl(n);
+      if (c && c.values && c.values.length > 0) out[n] = c;
+    }
   }
   return out;
 }
