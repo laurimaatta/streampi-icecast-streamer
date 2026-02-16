@@ -128,10 +128,6 @@ Jos haluat testata nettiradioasi muilla laitteilla lähiverkossa:
 **Tärkein askel** – useimmiten tämä on esteenä.
 
 ```bash
-# Suositus: käytä mukana tulevaa skriptiä
-sudo ./allow-icecast-firewall.sh
-
-# Tai manuaalisesti (UFW):
 sudo ufw allow 8000/tcp comment 'Icecast'
 sudo ufw status   # tarkista
 ```
