@@ -119,6 +119,39 @@ main { padding: 1.5rem 1.25rem; max-width: 680px; margin: 0 auto; }
 .panel { display: none; }
 .panel.active { display: block; }
 
+/* Desktop: leveämpi sisältöalue, lomakkeet kahdessa sarakkeessa → vähemmän vieritystä */
+@media (min-width: 900px) {
+  main {
+    max-width: min(1400px, 92vw);
+    padding: 1.5rem 2rem;
+  }
+  /* Lomakkeet kaksi saraketta */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.85rem 1.5rem;
+  }
+  .form-actions {
+    grid-column: 1 / -1;
+  }
+  #deviceRow {
+    grid-column: 1 / -1;
+  }
+  /* Ääni: sisääntulo-kortti kokoleveyttä (pitkät slidereet), muut leveitä */
+  #alsaGroupCapture .audio-controls-grid {
+    grid-template-columns: 1fr;
+  }
+  .audio-controls-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+  .https-hint { max-width: min(1400px, 92vw); }
+}
+
+@media (min-width: 1200px) {
+  main { max-width: min(1600px, 92vw); }
+  .https-hint { max-width: min(1600px, 92vw); }
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
