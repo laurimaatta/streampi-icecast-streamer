@@ -167,7 +167,15 @@
       `<option value="${(d.plughw || d.id || '').replace(/"/g, '&quot;')}">${d.label || d.plughw || d.id}</option>`
     ).join('');
     const cfg = await fetchJson('/api/darkice');
-    if (cfg.device) sel.value = cfg.device;
+    // Normalize saved device so it matches an option (e.g. hw:1,0 -> plughw:1,0)
+    const want = (cfg.device || '').trim();
+    const normalized = want.replace(/^hw:/, 'plughw:');
+    const opts = Array.from(sel.options);
+    const match = opts.find((o) => o.value === want || o.value === normalized);
+    sel.value = (match ? match.value : opts[0]?.value) || '';
+    // If only one device, hide the dropdown (selection is automatic)
+    const deviceRow = document.getElementById('deviceRow');
+    if (deviceRow) deviceRow.style.display = devices.length <= 1 ? 'none' : '';
   }
 
   function switchPanel(id) {
