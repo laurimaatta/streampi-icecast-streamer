@@ -37,32 +37,40 @@
   };
 
   const ALSA_LABELS = {
-    'Mic 1': 'Linja 1',
-    'Mic 2': 'Linja 2',
-    'Aux': 'Aux (linja)',
-    'Mixin PGA': 'Mikseri PGA',
-    'ADC': 'Tallennuksen voimakkuus (ADC)',
-    'DAC': 'Toiston voimakkuus (DAC)',
+    'Mic 1': 'Mikrofoni 1',
+    'Mic 2': 'Mikrofoni 2',
+    'Aux': 'Linja-sisääntulo',
+    'Mixin PGA': 'Mikserin vahvistus',
+    'ADC HPF': 'Kohinan suodatin',
+    'ADC Gain Ramping': 'Tasainen vahvistuksen muutos',
+    'DAC': 'Toiston voimakkuus',
     'Headphone': 'Kuulokkeet',
     'Lineout': 'Linjaulos',
-    'ALC': 'Automaattinen tasaus',
+    'ALC': 'Tasonkorjaus',
     'ALC Anticlip Level': 'Vääristymän eston taso',
     'ALC Anticlip Mode': 'Vääristymän esto',
-    'ALC Attack Rate': 'Hyökkäysnopeus',
+    'ALC Attack Rate': 'Nousunopeus',
     'ALC Hold Time': 'Pidä-aika',
-    'ALC Integ Attack Rate': 'Integ. hyökkäys',
-    'ALC Integ Release Rate': 'Integ. vapautus',
-    'ALC Max Analog Gain': 'Maks. analogivahvistus',
-    'ALC Max Attenuation': 'Maks. vaimennus',
-    'ALC Max Gain': 'Maks. vahvistus',
-    'ALC Max Threshold': 'Maks. kynnys',
-    'ALC Min Analog Gain': 'Min. analogivahvistus',
-    'ALC Min Threshold': 'Min. kynnys',
+    'ALC Integ Attack Rate': 'Tasoituksen nousunopeus',
+    'ALC Integ Release Rate': 'Tasoituksen laskunopeus',
+    'ALC Max Analog Gain': 'Maksimivahvistus (raja)',
+    'ALC Max Attenuation': 'Maksimivaimennus',
+    'ALC Max Gain': 'Suurin vahvistus',
+    'ALC Max Threshold': 'Yläkynnys',
+    'ALC Min Analog Gain': 'Minimivahvistus',
+    'ALC Min Threshold': 'Alakynnys (kohina)',
     'ALC Noise Threshold': 'Kohinan kynnys',
-    'ALC Release Rate': 'Vapautusnopeus',
+    'ALC Release Rate': 'Laskunopeus',
+    'Mic 1 Volume': 'Mikrofoni 1 – voimakkuus',
+    'Mic 2 Volume': 'Mikrofoni 2 – voimakkuus',
+    'Aux Volume': 'Linja-sisääntulo – voimakkuus',
+    'Mixin PGA Volume': 'Mikserin vahvistus',
+    'DAC Volume': 'Toisto – voimakkuus',
+    'Headphone Volume': 'Kuulokkeet – voimakkuus',
+    'Lineout Volume': 'Linjaulos – voimakkuus',
   };
 
-  const ALSA_CAPTURE = ['Mic 1', 'Mic 2', 'Aux', 'Mixin PGA', 'ADC', 'Mic 1 Volume', 'Mic 2 Volume', 'Aux Volume', 'Mixin PGA Volume', 'ADC Volume'];
+  const ALSA_CAPTURE = ['Mic 1', 'Mic 2', 'Aux', 'Mixin PGA', 'ADC HPF', 'ADC Gain Ramping', 'Mic 1 Volume', 'Mic 2 Volume', 'Aux Volume', 'Mixin PGA Volume'];
   const ALSA_PLAYBACK = ['DAC', 'Headphone', 'Lineout', 'DAC Volume', 'Headphone Volume', 'Lineout Volume'];
   const ALSA_ALC = ['ALC', 'ALC Anticlip Level', 'ALC Anticlip Mode', 'ALC Attack Rate', 'ALC Hold Time', 'ALC Integ Attack Rate', 'ALC Integ Release Rate', 'ALC Max Analog Gain', 'ALC Max Attenuation', 'ALC Max Gain', 'ALC Max Threshold', 'ALC Min Analog Gain', 'ALC Min Threshold', 'ALC Noise Threshold', 'ALC Release Rate'];
 
@@ -293,7 +301,37 @@
   });
 
   const ALSA_CONTROL_HINTS = {
-    'ALC Anticlip Level': 'Estää äänen vääristymisen. Asteikko 0–127: pieni arvo = tiukka raja (ääni pysyy hiljempana), suuri arvo = kovempi ääni sallitaan ennen rajoitusta.',
+    'Mic 1': 'Mikrofonikanavan 1 voimakkuus. Suurempi arvo = kovempi mikrofoniääni. Pienempi = hiljaisempi.',
+    'Mic 2': 'Mikrofonikanavan 2 voimakkuus. Suurempi arvo = kovempi mikrofoniääni. Pienempi = hiljaisempi.',
+    'Aux': 'Linja-sisääntulon voimakkuus (pääasiallinen säätö lähetykseen). Suurempi arvo = kovempi ääni. Pienempi = hiljaisempi.',
+    'Mixin PGA': 'Mikserin vahvistus ennen muunnosta. Suurempi arvo = vahvempi lähtö. Pienempi = heikompi.',
+    'ADC HPF': 'Suodattaa matalataajuiset huminat ja kohina pois. Päällä = vähemmän kohinaa (suositeltu). Pois = koko taajuuskaista läpi.',
+    'ADC Gain Ramping': 'Päällä = vahvistus muuttuu tasaisesti (ei napsahduksia). Pois = nopeampi vaste.',
+    'DAC': 'Toiston (kuuntelun) voimakkuus. Suurempi = kovempi kuuntelu. Pienempi = hiljaisempi.',
+    'Headphone': 'Kuulokeulostulon voimakkuus. Suurempi = kovempi. Pienempi = hiljaisempi.',
+    'Lineout': 'Linjaulosmenon voimakkuus. Suurempi = kovempi. Pienempi = hiljaisempi.',
+    'ALC': 'Tasonkorjaus tasaa äänenvoimakkuuden automaattisesti. Päällä = tasaisempi ääni (puhe, laulu). Pois = raaka taso.',
+    'ALC Anticlip Level': 'Vääristymän eston taso. Pienempi arvo = tiukempi raja (ääni pysyy hiljempana, ei leikkaa). Suurempi = kovempi ääni sallitaan ennen rajoitusta.',
+    'ALC Anticlip Mode': 'Vääristymän esto. Päällä = estää leikkaantumisen. Pois = ei estoa.',
+    'ALC Attack Rate': 'Kuinka nopeasti tasonkorjaus reagoi äänen nousuun. Suurempi arvo = nopeampi nousu (ääni vahvistuu nopeammin). Pienempi = hitaampi.',
+    'ALC Hold Time': 'Kuinka kauan vahvistus pidetään ennen laskua. Suurempi = pidempi pito. Pienempi = nopeammin laskee hiljaisuuteen.',
+    'ALC Integ Attack Rate': 'Tasonkorjauksen tasoitettu nousunopeus. Suurempi = nopeampi tasoitettu nousu. Pienempi = pehmeämpi nousu.',
+    'ALC Integ Release Rate': 'Tasonkorjauksen tasoitettu laskunopeus. Suurempi = nopeammin vahvistus laskee. Pienempi = hitaampi lasku.',
+    'ALC Max Analog Gain': 'Suurin sallittu vahvistus. Pienempi arvo = vähemmän kohinaa vahvistuu. Suurempi = enemmän vahvistusvaraa.',
+    'ALC Max Attenuation': 'Kuinka paljon tasonkorjaus voi hiljentää kovaa ääntä. Suurempi = voi hiljentää enemmän. Pienempi = vähemmän vaimennusta.',
+    'ALC Max Gain': 'Suurin kokonaisvahvistus. Pienempi = tiukempi yläraja. Suurempi = enemmän vahvistusta sallitaan.',
+    'ALC Max Threshold': 'Taso, josta ylöspäin tasonkorjaus alkaa vaimentaa. Pienempi = vaimentaa jo hiljaisempaa. Suurempi = vain kovaa ääntä vaimentaa.',
+    'ALC Min Analog Gain': 'Minimivahvistus. Suurempi = ääni ei mene tätä hiljaisemmaksi. Pienempi = voi mennä hiljaisemmaksi.',
+    'ALC Min Threshold': 'Alle tämän tason ääntä pidetään kohinana ja vaiennetaan. Pienempi arvo = vähemmän suodatusta (hiljainen puhe voi katketa). Suurempi = enemmän kohinaa vaiennetaan.',
+    'ALC Noise Threshold': 'Kohinan kynnys. Pienempi arvo = herkempi suodatus (enemmän taustakohinaa vaiennetaan). Suurempi = vähemmän suodatusta. Puheelle usein 2–5.',
+    'ALC Release Rate': 'Kuinka nopeasti tasonkorjaus laskee vahvistusta äänen hiljetessä. Suurempi = nopeammin laskee. Pienempi = vahvistus pysyy kauemmin.',
+    'Mic 1 Volume': 'Suurempi arvo = kovempi ääni. Pienempi = hiljaisempi.',
+    'Mic 2 Volume': 'Suurempi arvo = kovempi ääni. Pienempi = hiljaisempi.',
+    'Aux Volume': 'Suurempi arvo = kovempi linjaääni. Pienempi = hiljaisempi.',
+    'Mixin PGA Volume': 'Suurempi = vahvempi. Pienempi = heikompi.',
+    'DAC Volume': 'Suurempi = kovempi toisto. Pienempi = hiljaisempi.',
+    'Headphone Volume': 'Suurempi = kovempi. Pienempi = hiljaisempi.',
+    'Lineout Volume': 'Suurempi = kovempi. Pienempi = hiljaisempi.',
   };
 
   function renderAlsaControl(name, c, container) {
@@ -306,9 +344,8 @@
     if (hint) div.title = hint;
     const isMono = c.values && c.values.length === 1;
     const vals = c.values || [0];
-    const showAnticlipHint = (name === 'ALC Anticlip Level');
     let html = `<label>${label}</label>`;
-    if (showAnticlipHint) html += `<span class="control-hint">Pieni arvo = tiukka raja (ääni pysyy hiljempana), suuri = kovempi ääni sallitaan. Asteikko 0–127.</span>`;
+    if (hint) html += `<span class="control-hint">${hint}</span>`;
     if (isMono || vals.length === 1) {
       const v = vals[0];
       const pct = max ? Math.round((v / max) * 100) : 0;
@@ -365,8 +402,9 @@
     const capture = [];
     const playback = [];
     const alc = [];
+    const HIDE_CONTROLS = ['ADC', 'ADC Volume']; // Ei vaikuta lähetykseen, ei näytetä
     Object.entries(controls).forEach(([name, c]) => {
-      if (!c) return;
+      if (!c || HIDE_CONTROLS.includes(name)) return;
       if (ALSA_ALC.some((k) => name === k || name.startsWith(k + ' '))) alc.push([name, c]);
       else if (ALSA_CAPTURE.some((k) => name.includes(k))) capture.push([name, c]);
       else if (ALSA_PLAYBACK.some((k) => name.includes(k))) playback.push([name, c]);

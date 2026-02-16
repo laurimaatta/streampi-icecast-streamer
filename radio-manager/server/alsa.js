@@ -249,9 +249,23 @@ function applyIqaudioDefaults() {
     { name: 'ADC HPF', value: 'on' },  // High-pass filter on (reduce low-freq noise)
     { name: 'ADC Gain Ramping', value: 'off' },
     
-    // ALC (Automatic Level Control) - helps with dynamic range
+    // ALC (Automatic Level Control) - puheelle/laululle, taustakohinan suodatus
     { name: 'ALC', value: 'on' },
-    
+    { name: 'ALC Anticlip Level', value: 110 },   // Vääristymän esto, riittävä headroom
+    { name: 'ALC Anticlip Mode', value: 1 },     // Anticlip päällä
+    { name: 'ALC Attack Rate', value: 2 },       // Nopea reagointi äänen nousuun
+    { name: 'ALC Hold Time', value: 0 },         // Pidä-aika lyhyt
+    { name: 'ALC Integ Attack Rate', value: 3 },
+    { name: 'ALC Integ Release Rate', value: 4 },
+    { name: 'ALC Max Analog Gain', value: 7 },
+    { name: 'ALC Max Attenuation', value: 12 }, // Enimmäisvaimennus
+    { name: 'ALC Max Gain', value: 7 },
+    { name: 'ALC Max Threshold', value: 127 },
+    { name: 'ALC Min Analog Gain', value: 0 },
+    { name: 'ALC Min Threshold', value: 17 },   // Alle tämän kohinaa vaiennetaan
+    { name: 'ALC Noise Threshold', value: 3 },  // Kohinan kynnys: pieni = enemmän suodatusta
+    { name: 'ALC Release Rate', value: 3 },    // Vapautusnopeus
+
     // Mic inputs - mute/minimize (not used with AUX-only setup)
     { name: 'Mic 1', value: 'mute' },
     { name: 'Mic 2', value: 'mute' },
