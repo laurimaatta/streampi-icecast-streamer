@@ -11,6 +11,7 @@ Internet-radiolähetyksen web-ohjaus Raspberry Pi Zero 2 W -laitteelle (IQAudio 
 |--------|--------|
 | `radio-manager/` | StreamPi-webohjaus (Node.js, HTTPS) |
 | `wifi-provisioning/` | AP-tila ja verkkojen lisäys (Python, Flask) |
+| `icecast-testserver/` | Paikallinen Icecast-testipalvelin (Docker) – lähetyksen testaamiseen |
 | `docs/` | [Asennus](docs/ASENNUS.md), [kytkentä ja tarvikkeet](docs/KYTKENTA.md) |
 
 ## Teknologia
@@ -19,6 +20,7 @@ Internet-radiolähetyksen web-ohjaus Raspberry Pi Zero 2 W -laitteelle (IQAudio 
 - **Välityspalvelin:** nginx (HTTPS → Node)
 - **Ääni:** ALSA (IQaudIO Codec Zero / DA7213), Darkice (MP3/Ogg → Icecast)
 - **Provisioning:** Python, Flask (AP-tila, WiFi-verkkojen lisäys)
+- **Testipalvelin:** `icecast-testserver/` – Docker-pohjainen Icecast (portti 8000), ohje: [icecast-testserver/README.md](icecast-testserver/README.md)
 
 ## Nopea käynnistys
 

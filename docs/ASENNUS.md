@@ -50,7 +50,7 @@ cd ~/radio-manager && chmod +x scripts/setup-pi.sh && ./scripts/setup-pi.sh
 
 **Kirjautuminen:** käyttäjätunnus **admin**, salasana **streamPi**. Vaihda salasana heti Järjestelmä-välilehden "Web-kirjautuminen" -osiosta.
 
-**Lähetyksen asetukset** (palvelin, salasana jne.): täytä web-käyttöliittymän **Lähetys**-välilehdeltä. Skriptissä ei kysytä näitä – kaikki annetaan käyttöliittymän kautta.
+**Lähetyksen asetukset** (palvelin, salasana jne.): täytä web-käyttöliittymän **Lähetys**-välilehdeltä. Skriptissä ei kysytä näitä – kaikki annetaan käyttöliittymän kautta. Paikallista testausta varten voit käynnistää repon Icecast-testipalvelimen: [icecast-testserver/README.md](../icecast-testserver/README.md) (Docker, portti 8000).
 
 ---
 

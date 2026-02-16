@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  icecast:
+    image: infiniteproject/icecast:latest
+    container_name: icecast-server
+    ports:
+      # Bind kaikille rajapinnoille (0.0.0.0) jotta lähiverkosta pääsee
+      - "0.0.0.0:8000:8000"
+    volumes:
+      - ./icecast.xml:/etc/icecast.xml
+      - ./logs:/var/log/icecast
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Helsinki
