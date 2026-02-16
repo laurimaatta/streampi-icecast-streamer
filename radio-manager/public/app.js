@@ -45,9 +45,9 @@
     'DAC': 'Toiston voimakkuus (DAC)',
     'Headphone': 'Kuulokkeet',
     'Lineout': 'Linjaulos',
-    'ALC': 'ALC (automaattinen tasaus)',
-    'ALC Anticlip Level': 'Anticlip-taso',
-    'ALC Anticlip Mode': 'Anticlip-tila',
+    'ALC': 'Automaattinen tasaus',
+    'ALC Anticlip Level': 'Vääristymän eston taso',
+    'ALC Anticlip Mode': 'Vääristymän esto',
     'ALC Attack Rate': 'Hyökkäysnopeus',
     'ALC Hold Time': 'Pidä-aika',
     'ALC Integ Attack Rate': 'Integ. hyökkäys',
@@ -75,12 +75,11 @@
 
   function setStreamStatus(data) {
     if (data.mode === 'SWITCH') {
-      // SWITCH: show actual stream state and note that GPIO controls it
       if (data.active) {
-        streamStatus.textContent = 'LIVE (kytkin)';
+        streamStatus.textContent = 'LIVE';
         streamStatus.className = 'status-pill active';
       } else {
-        streamStatus.textContent = 'Pysäytetty (kytkin)';
+        streamStatus.textContent = 'Pysäytetty';
         streamStatus.className = 'status-pill inactive';
       }
     } else if (data.active) {
@@ -168,12 +167,20 @@
     return data;
   }
 
+  function deviceLabelForUser(d) {
+    const raw = d.label || d.plughw || d.id || '';
+    if (/IQaudIO|IQ\s*Audio|Pi\s*Codec/i.test(raw)) return 'Äänikortti';
+    return raw;
+  }
+
   async function loadAudioDevices() {
     const devices = await fetchJson('/api/audio/devices');
     const sel = formDarkice.elements.device;
-    sel.innerHTML = devices.map((d) =>
-      `<option value="${(d.plughw || d.id || '').replace(/"/g, '&quot;')}">${d.label || d.plughw || d.id}</option>`
-    ).join('');
+    sel.innerHTML = devices.map((d) => {
+      const value = (d.plughw || d.id || '').replace(/"/g, '&quot;');
+      const label = deviceLabelForUser(d);
+      return `<option value="${value}">${label.replace(/</g, '&lt;')}</option>`;
+    }).join('');
     const cfg = await fetchJson('/api/darkice');
     // Normalize saved device so it matches an option (e.g. hw:1,0 -> plughw:1,0)
     const want = (cfg.device || '').trim();
@@ -251,7 +258,7 @@
       try {
         const mode = el.value;
         await fetchJson('/api/streaming/mode', { method: 'PUT', body: JSON.stringify({ mode }) });
-        showToast(T.toastMode + (mode === 'SWITCH' ? 'Kytkin' : 'Web UI'));
+        showToast(T.toastMode + (mode === 'SWITCH' ? 'Kytkin' : 'Tämä sivu'));
         loadStreamingStatus();
       } catch (err) {
         showToast(T.error + err.message);
@@ -285,15 +292,23 @@
     }
   });
 
+  const ALSA_CONTROL_HINTS = {
+    'ALC Anticlip Level': 'Estää äänen vääristymisen. Asteikko 0–127: pieni arvo = tiukka raja (ääni pysyy hiljempana), suuri arvo = kovempi ääni sallitaan ennen rajoitusta.',
+  };
+
   function renderAlsaControl(name, c, container) {
     const label = ALSA_LABELS[name] || name;
     const min = c.min ?? 0;
     const max = c.max ?? 127;
     const div = document.createElement('div');
     div.className = 'audio-control';
+    const hint = ALSA_CONTROL_HINTS[name];
+    if (hint) div.title = hint;
     const isMono = c.values && c.values.length === 1;
     const vals = c.values || [0];
+    const showAnticlipHint = (name === 'ALC Anticlip Level');
     let html = `<label>${label}</label>`;
+    if (showAnticlipHint) html += `<span class="control-hint">Pieni arvo = tiukka raja (ääni pysyy hiljempana), suuri = kovempi ääni sallitaan. Asteikko 0–127.</span>`;
     if (isMono || vals.length === 1) {
       const v = vals[0];
       const pct = max ? Math.round((v / max) * 100) : 0;
@@ -373,8 +388,8 @@
 
   document.getElementById('btnApplyAlsaDefaults').addEventListener('click', async () => {
     try {
-      const r = await fetchJson('/api/audio/apply-defaults', { method: 'POST' });
-      showToast('Oletukset asetettu. Tallenna äänitila, jotta ne säilyvät.');
+      await fetchJson('/api/audio/apply-defaults', { method: 'POST' });
+      showToast('Suositellut asetukset asetettu. Tallenna äänitila alta, jotta ne säilyvät.');
       loadAudioControls();
     } catch (err) {
       showToast(T.error + err.message);

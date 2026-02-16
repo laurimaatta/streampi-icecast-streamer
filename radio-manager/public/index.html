@@ -42,20 +42,20 @@
             <label>Ohjaus</label>
             <div class="radio-group">
               <label><input type="radio" name="mode" value="SWITCH"> Kytkin</label>
-              <label><input type="radio" name="mode" value="WEBUI"> Web UI</label>
+              <label><input type="radio" name="mode" value="WEBUI"> Tämä sivu</label>
             </div>
           </div>
           <div class="btn-group">
             <button type="button" id="btnToggleStream">Käynnistä</button>
             <button type="button" id="btnRestart" style="display:none;">Käynnistä uudelleen</button>
           </div>
-          <p id="streamSwitchHint" class="muted small" style="display:none;">Käytä fyysistä kytkintä (GPIO) lähetyksen käynnistämiseen ja pysäyttämiseen.</p>
+          <p id="streamSwitchHint" class="muted small" style="display:none;">Lähetys käynnistyy ja pysähtyy fyysisellä kytkimellä.</p>
         </div>
       </div>
       <div class="card">
         <h2>Lähetyksen asetukset</h2>
-        <p class="muted">Tallenna muutokset ja käynnistä lähetys uudelleen tarvittaessa. Palvelin ja salasana voidaan asettaa myös .env-tiedostoon.</p>
-        <p id="envNote" class="muted small" style="display:none;">Palvelin, mount-piste ja salasana haetaan .env-tiedostosta.</p>
+        <p class="muted">Tallenna muutokset ja käynnistä lähetys uudelleen tarvittaessa.</p>
+        <p id="envNote" class="muted small" style="display:none;">Jotkut asetukset on määritetty järjestelmän puolella.</p>
         <form id="formDarkice" class="form-grid">
           <label>Palvelin <input type="text" name="server" placeholder="icecast.example.com"></label>
           <label>Portti <input type="number" name="port" min="1" max="65535" placeholder="8000"></label>
@@ -85,27 +85,27 @@
     <section id="panel-audio" class="panel" role="tabpanel" aria-labelledby="tab-audio" hidden>
       <div class="card">
         <h2>Äänen säätö</h2>
-        <p class="muted">Mikseriasetukset. Muutokset tulevat voimaan heti. Tallenna nykyinen tila, jotta asetukset säilyvät käynnistyksessä.</p>
+        <p class="muted">Voimakkuudet ja tasot. Muutokset tulevat voimaan heti. Tallenna tila, jotta asetukset säilyvät laitteen uudelleenkäynnistyksen jälkeen.</p>
         <p id="alsaStateIndicator" class="muted small" aria-live="polite">—</p>
         <div class="alsa-groups">
           <div class="alsa-group" id="alsaGroupCapture">
-            <h3>Tallennus</h3>
+            <h3>Lähetykseen menevä ääni (sisääntulo)</h3>
             <div id="audioControlsCapture" class="audio-controls-grid"></div>
           </div>
           <div class="alsa-group" id="alsaGroupPlayback">
-            <h3>Toisto</h3>
+            <h3>Kuuntelu ja ulosmenot</h3>
             <div id="audioControlsPlayback" class="audio-controls-grid"></div>
           </div>
           <div class="alsa-group" id="alsaGroupALC">
-            <h3>Automaattinen tasaus (ALC)</h3>
-            <p class="muted small">Automaattinen äänenvoimakkuuden säätö tallennuksessa.</p>
+            <h3>Automaattinen äänen tasaus</h3>
+            <p class="muted small">Säättää äänenvoimakkuuden automaattisesti tasaisemmaksi.</p>
             <div id="audioControlsALC" class="audio-controls-grid"></div>
           </div>
         </div>
-        <div class="btn-group">
-          <button type="button" id="btnApplyAlsaDefaults">Asenna äänen oletukset (IQaudIO)</button>
-          <button type="button" id="btnStoreAlsa">Tallenna nykyinen äänitila</button>
-          <button type="button" id="btnRestoreAlsa">Palauta tallennettu äänitila</button>
+        <div class="btn-group" id="audioButtonGroup">
+          <button type="button" id="btnApplyAlsaDefaults" title="Asettaa suositellut tasot puhe-/lähetyskäyttöön. Tallenna tila alta, jotta asetukset säilyvät.">Palauta suositellut ääniasetukset</button>
+          <button type="button" id="btnStoreAlsa" title="Tallentaa nykyiset volyymit ja tasot. Ne otetaan käyttöön seuraavalla käynnistyksellä.">Tallenna äänitila</button>
+          <button type="button" id="btnRestoreAlsa" title="Palauttaa aiemmin tallennetut volyymit ja tasot.">Palauta tallennettu äänitila</button>
         </div>
       </div>
     </section>
@@ -143,7 +143,7 @@
   </main>
 
   <div id="httpsHint" class="https-hint muted small">
-    Jos selain varoittaa yhteydestä, asenna CA-sertifikaatti – ohjeet asennusohjeessa.
+    Jos selain varoittaa yhteydestä, voit hyväksyä poikkeuksen ja jatkaa turvallisesti.
   </div>
   <div id="toast" class="toast" aria-live="polite"></div>
   </div>
