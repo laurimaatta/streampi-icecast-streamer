@@ -134,15 +134,15 @@ Skripti kopioi ohjelman Pi:lle ja ajaa koko asennuksen etänä (apt, install.sh,
 |--------|----------------------|
 | Lähetyksen asetukset (palvelin, bittinopeus jne.) | `/etc/darkice.cfg` – StreamPi kirjoittaa sinne |
 | Oletusarvot ja salasanat | `~/.radio-manager/.env` |
-| Lähetyksen tila (päällä / pois / nappi) | `~/.radio-manager/app-config.json` |
+| Lähetyksen ohjaus (kytkin / Web UI) | `~/.radio-manager/app-config.json` |
 | Varmuuskopiot, lokit, sertifikaatit | `~/.radio-manager/` |
 
 ---
 
 ## 9. Lähetyksen ohjaus (web ja GPIO)
 
-- **Päällä / Pois:** Ohjaa web-napilla.
-- **Laitteen nappi (SWITCH):** Lähetys seuraa fyysistä kytkintä (GPIO 17). Kytkin suljettu = lähetys päällä, kytkin auki = pois.
+- **Kytkin:** Lähetys seuraa fyysistä kytkintä (GPIO 17). Kytkin suljettu = lähetys päällä, kytkin auki = pois.
+- **Web UI:** Ohjaa web-napilla (Käynnistä / Lopeta). Käynnistä uudelleen -nappi näkyy kun lähetys on käynnissä, riippumatta siitä miten lähetys on käynnistetty.
 
 Kytkentä: [KYTKENTA.md](KYTKENTA.md).
 
@@ -154,7 +154,7 @@ Kytkentä: [KYTKENTA.md](KYTKENTA.md).
 |---------|----------|
 | **En pääse kirjautumaan** | Käytä https:// ja oletustunnukset (ohjeessa). Jos ei toimi: Pi:llä `cd ~/radio-manager && node scripts/reset-web-login.js`, sitten kirjaudu uudelleen ja vaihda salasana Järjestelmä-välilehdeltä. |
 | **Lähetys katkeaa heti / I/O error** | **PipeWire lukitsee äänilaitteen** → Disable PipeWire: `sudo -u user XDG_RUNTIME_DIR=/run/user/1000 systemctl --user mask pipewire pipewire-pulse wireplumber pipewire.socket pipewire-pulse.socket && sudo -u user XDG_RUNTIME_DIR=/run/user/1000 systemctl --user stop pipewire pipewire-pulse wireplumber && sudo systemctl restart darkice`. Asennusskripti tekee tämän automaattisesti. |
-| **Lähetys ei käynnisty** | Valitse tila "Päällä" (ei "Laitteen nappi" ilman kytkintä). Tarkista `journalctl -u darkice -f`. |
+| **Lähetys ei käynnisty** | Valitse ohjaus "Web UI" (ei "Kytkin" ilman fyysistä kytkintä). Tarkista `journalctl -u darkice -f`. |
 | **Hotspot ei ilmesty** | Tarkista: `systemctl is-enabled wifi-watchdog.timer button-to-ap.service` (pitää olla enabled). Jos masked: `sudo systemctl unmask wifi-watchdog.timer button-to-ap.service && sudo systemctl enable --now wifi-watchdog.timer button-to-ap.service`. Tarkista että skriptit ovat kopioituneet: `wc -c /opt/wifi-provisioning/start-ap.sh` (ei saa olla 0). Älä aja setup-pi.sh:ta suoraan `sudo`lla – aja ilman sudo: `./scripts/setup-pi.sh`. |
 | **Hotspot katoaa hetken päästä** | AP-keeper pitää AP-tilan päällä (estää NM:n ottamasta wlan0 takaisin). Tarkista: `systemctl is-active ap-keeper.timer`. Lokit: `sudo cat /run/wifi-provisioning/start-ap.log` ja `sudo cat /run/wifi-provisioning/ap-keeper.log`. |
 | **Logit** | `journalctl -u radio-manager -f`, `journalctl -u darkice -f` |

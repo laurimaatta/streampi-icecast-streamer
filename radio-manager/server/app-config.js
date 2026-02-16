@@ -34,11 +34,14 @@ function getStreamingMode() {
   return read().streamingMode;
 }
 
+const VALID_STREAMING_MODES = ['ON', 'OFF', 'SWITCH', 'WEBUI'];
 function setStreamingMode(mode) {
-  if (!['ON', 'OFF', 'SWITCH'].includes(mode)) {
-    throw new Error('Invalid streaming mode');
+  const m = mode != null ? String(mode).trim().toUpperCase().replace(/\s+/g, '') : '';
+  const normalized = m === 'WEBUI' ? 'WEBUI' : (VALID_STREAMING_MODES.includes(m) ? m : null);
+  if (!normalized) {
+    throw new Error('Invalid streaming mode; use SWITCH or WEBUI');
   }
-  return write({ streamingMode: mode });
+  return write({ streamingMode: normalized });
 }
 
 function setAuth(username, password) {

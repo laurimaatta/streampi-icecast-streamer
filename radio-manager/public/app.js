@@ -127,20 +127,28 @@
     const data = await fetchJson('/api/streaming/status');
     setStreamStatus(data);
     const mode = data.mode || 'SWITCH';
+    const uiMode = (mode === 'ON' || mode === 'OFF') ? 'WEBUI' : mode;
     document.querySelectorAll('input[name="mode"]').forEach((el) => {
-      el.checked = el.value === mode;
+      el.checked = el.value === uiMode;
     });
-    const btnStart = document.getElementById('btnStart');
-    const btnStop = document.getElementById('btnStop');
+    const btnToggleStream = document.getElementById('btnToggleStream');
+    const btnRestart = document.getElementById('btnRestart');
     const streamSwitchHint = document.getElementById('streamSwitchHint');
     if (mode === 'SWITCH') {
-      if (btnStart) btnStart.disabled = true;
-      if (btnStop) btnStop.disabled = true;
+      if (btnToggleStream) {
+        btnToggleStream.disabled = true;
+        btnToggleStream.textContent = 'Käynnistä';
+      }
       if (streamSwitchHint) streamSwitchHint.style.display = 'block';
     } else {
-      if (btnStart) btnStart.disabled = false;
-      if (btnStop) btnStop.disabled = false;
+      if (btnToggleStream) {
+        btnToggleStream.disabled = false;
+        btnToggleStream.textContent = data.active ? 'Lopeta' : 'Käynnistä';
+      }
       if (streamSwitchHint) streamSwitchHint.style.display = 'none';
+    }
+    if (btnRestart) {
+      btnRestart.style.display = data.active ? 'inline-block' : 'none';
     }
     return data;
   }
@@ -241,8 +249,9 @@
   document.querySelectorAll('input[name="mode"]').forEach((el) => {
     el.addEventListener('change', async () => {
       try {
-        await fetchJson('/api/streaming/mode', { method: 'PUT', body: JSON.stringify({ mode: el.value }) });
-        showToast(T.toastMode + (el.value === 'ON' ? 'Päällä' : el.value === 'OFF' ? 'Pois' : 'Laitteen nappi'));
+        const mode = el.value;
+        await fetchJson('/api/streaming/mode', { method: 'PUT', body: JSON.stringify({ mode }) });
+        showToast(T.toastMode + (mode === 'SWITCH' ? 'Kytkin' : 'Web UI'));
         loadStreamingStatus();
       } catch (err) {
         showToast(T.error + err.message);
@@ -250,22 +259,20 @@
     });
   });
 
-  document.getElementById('btnStart').addEventListener('click', async () => {
+  document.getElementById('btnToggleStream').addEventListener('click', async () => {
+    const btn = document.getElementById('btnToggleStream');
+    const isStart = btn.textContent === 'Käynnistä';
     try {
-      await fetchJson('/api/streaming/start', { method: 'POST' });
-      showToast(T.toastStreamStart);
+      if (isStart) {
+        await fetchJson('/api/streaming/start', { method: 'POST' });
+        showToast(T.toastStreamStart);
+      } else {
+        await fetchJson('/api/streaming/stop', { method: 'POST' });
+        showToast(T.toastStreamStop);
+      }
       loadStreamingStatus();
     } catch (err) {
-      showToast(err.message);
-    }
-  });
-  document.getElementById('btnStop').addEventListener('click', async () => {
-    try {
-      await fetchJson('/api/streaming/stop', { method: 'POST' });
-      showToast(T.toastStreamStop);
-      loadStreamingStatus();
-    } catch (err) {
-      showToast(err.message);
+      showToast(T.error + err.message);
     }
   });
   document.getElementById('btnRestart').addEventListener('click', async () => {

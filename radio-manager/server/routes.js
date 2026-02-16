@@ -97,7 +97,7 @@ router.get('/api/streaming/status', (req, res) => {
 router.post('/api/streaming/start', (req, res) => {
   const mode = appConfig.getStreamingMode();
   if (mode === 'SWITCH') {
-    return res.status(400).json({ error: 'Streaming is in SWITCH mode; use GPIO button' });
+    return res.status(400).json({ error: 'Lähetys on kytkimen tilassa; käytä fyysistä kytkintä.' });
   }
   const r = darkiceControl.start();
   if (r.ok) res.json({ ok: true }); else res.status(500).json({ error: r.error || 'Start failed' });
@@ -106,7 +106,7 @@ router.post('/api/streaming/start', (req, res) => {
 router.post('/api/streaming/stop', (req, res) => {
   const mode = appConfig.getStreamingMode();
   if (mode === 'SWITCH') {
-    return res.status(400).json({ error: 'Streaming is in SWITCH mode; use GPIO button' });
+    return res.status(400).json({ error: 'Lähetys on kytkimen tilassa; käytä fyysistä kytkintä.' });
   }
   const r = darkiceControl.stop();
   if (r.ok) res.json({ ok: true }); else res.status(500).json({ error: r.error || 'Stop failed' });
@@ -121,10 +121,17 @@ router.get('/api/streaming/mode', (req, res) => {
   res.json({ mode: appConfig.getStreamingMode() });
 });
 
+const VALID_MODES = ['ON', 'OFF', 'SWITCH', 'WEBUI'];
+function normalizeMode(m) {
+  if (m == null) return null;
+  const s = String(m).trim().toUpperCase().replace(/\s+/g, '');
+  return s === 'WEBUI' ? 'WEBUI' : (VALID_MODES.includes(s) ? s : null);
+}
+
 router.put('/api/streaming/mode', (req, res) => {
-  const { mode } = req.body;
-  if (!['ON', 'OFF', 'SWITCH'].includes(mode)) {
-    return res.status(400).json({ error: 'Invalid mode: use ON, OFF, or SWITCH' });
+  const mode = normalizeMode(req.body?.mode);
+  if (!mode) {
+    return res.status(400).json({ error: 'Invalid mode: use SWITCH or WEBUI' });
   }
   try {
     appConfig.setStreamingMode(mode);

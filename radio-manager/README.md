@@ -4,7 +4,7 @@ Web-käyttöliittymä internet-radiolähetyksen ohjaukseen Raspberry Pi Zero 2 W
 
 ## Ominaisuudet
 
-- **Lähetys:** Lähetyksen käynnistys ja pysäytys, tila (päällä / pois / laitteen nappi)
+- **Lähetys:** Lähetyksen ohjaus kytkimellä tai Web UI -napilla
 - **Lähetyksen asetukset:** Bittinopeus, näytteenottotaajuus, kanavat, äänilähde. Palvelin ja salasana asetetaan .env-tiedostoon
 - **Ääni:** Mikseriasetukset, tallenna ja palauta äänitila
 - **Järjestelmä:** Varmuuskopio ja palautus (JSON, paikalliset)
@@ -37,8 +37,8 @@ Web-käyttöliittymä internet-radiolähetyksen ohjaukseen Raspberry Pi Zero 2 W
 - **Portti:** `PORT` (oletus: 8443)
 - **.env:** Palvelin, salasana, mount-piste, lähetyksen nimi – ks. `.env.example`.
 
-## Laitteen nappi
+## Kytkin
 
-Kun tila on "Laitteen nappi", lähetys käynnistyy ja pysähtyy fyysisellä napilla (GPIO17). Nappi on kytketty äänikortin / Pi:n GPIO17.
+Kun ohjaus on "Kytkin", lähetys käynnistyy ja pysähtyy fyysisellä kytkimellä (GPIO17). Web UI -tilassa ohjataan Käynnistä/Lopeta -napilla.
 
 Yksityiskohtainen asennus ja kytkentä: projektin juuren **[docs/ASENNUS.md](../docs/ASENNUS.md)** ja **[docs/KYTKENTA.md](../docs/KYTKENTA.md)**.

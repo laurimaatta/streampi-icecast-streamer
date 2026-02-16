@@ -39,19 +39,17 @@
         <h2>Lähetyksen ohjaus</h2>
         <div class="stream-control">
           <div class="mode-group">
-            <label>Tila</label>
+            <label>Ohjaus</label>
             <div class="radio-group">
-              <label><input type="radio" name="mode" value="ON"> Päällä</label>
-              <label><input type="radio" name="mode" value="OFF"> Pois</label>
-              <label><input type="radio" name="mode" value="SWITCH"> Laitteen nappi</label>
+              <label><input type="radio" name="mode" value="SWITCH"> Kytkin</label>
+              <label><input type="radio" name="mode" value="WEBUI"> Web UI</label>
             </div>
           </div>
           <div class="btn-group">
-            <button type="button" id="btnStart">Käynnistä</button>
-            <button type="button" id="btnStop">Pysäytä</button>
-            <button type="button" id="btnRestart">Käynnistä uudelleen</button>
+            <button type="button" id="btnToggleStream">Käynnistä</button>
+            <button type="button" id="btnRestart" style="display:none;">Käynnistä uudelleen</button>
           </div>
-          <p id="streamSwitchHint" class="muted small" style="display:none;">Käytä laitteen nappia (GPIO) lähetyksen käynnistämiseen ja pysäyttämiseen.</p>
+          <p id="streamSwitchHint" class="muted small" style="display:none;">Käytä fyysistä kytkintä (GPIO) lähetyksen käynnistämiseen ja pysäyttämiseen.</p>
         </div>
       </div>
       <div class="card">

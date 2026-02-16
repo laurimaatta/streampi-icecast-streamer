@@ -1,5 +1,5 @@
 [Unit]
-Description=DarkIce GPIO button control (start/stop streaming)
+Description=DarkIce GPIO kytkin-ohjaus (lähetyksen käynnistys/pysäytys)
 After=darkice.service
 # Only running when streaming mode is SWITCH; started/stopped by Radio Manager
 

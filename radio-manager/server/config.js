@@ -39,7 +39,7 @@ module.exports = {
   BIND,
   /** Default app config (streaming mode, optional auth) */
   defaultAppConfig: {
-    streamingMode: 'SWITCH', // 'ON' | 'OFF' | 'SWITCH'
+    streamingMode: 'SWITCH', // 'SWITCH' | 'WEBUI' | (legacy: 'ON' | 'OFF')
     auth: null, // { username, passwordHash } or null
   },
 };
