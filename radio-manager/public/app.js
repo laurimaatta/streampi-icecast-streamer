@@ -323,7 +323,7 @@
     'ALC Max Threshold': 'Taso, josta ylöspäin tasonkorjaus alkaa vaimentaa. Pienempi = vaimentaa jo hiljaisempaa. Suurempi = vain kovaa ääntä vaimentaa.',
     'ALC Min Analog Gain': 'Minimivahvistus. Suurempi = ääni ei mene tätä hiljaisemmaksi. Pienempi = voi mennä hiljaisemmaksi.',
     'ALC Min Threshold': 'Alakynnys: vaikuttaa siihen, kuinka paljon taustakohinaa päästetään läpi. Pienempi arvo = vähemmän kohinaa pääsee läpi (tiukempi suodatus). Suurempi arvo = enemmän kohinaa pääsee läpi.',
-    'ALC Noise Threshold': 'Toimii usein Alakynnyksen kanssa tai ei vaikuta juuri mitään tällä laitteella. Jos vaikuttaa: kynnys, josta alaspäin ääntä pidetään kohinana; suurempi arvo voi tarkoittaa tiukempaa suodatusta.',
+    'ALC Noise Threshold': 'Kynnys, josta alaspäin ääntä pidetään kohinana; suurempi arvo voi tarkoittaa tiukempaa suodatusta.',
     'ALC Release Rate': 'Kuinka nopeasti tasonkorjaus laskee vahvistusta äänen hiljetessä. Suurempi = nopeammin laskee. Pienempi = vahvistus pysyy kauemmin.',
     'Mic 1 Volume': 'Suurempi arvo = kovempi ääni. Pienempi = hiljaisempi.',
     'Mic 2 Volume': 'Suurempi arvo = kovempi ääni. Pienempi = hiljaisempi.',
