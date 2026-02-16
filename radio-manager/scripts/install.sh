@@ -24,7 +24,18 @@ RUN_AS_USER="${ARG_USER:-$RUN_AS_USER}"
 RUN_AS_USER="${RUN_AS_USER:-$USER}"
 RUN_AS_USER="${RUN_AS_USER:-pi}"
 
-ALSA_CARD="${ALSA_CARD:-0}"
+# ALSA card: use install.conf if set; else auto-detect (IQaudIO is often card 1)
+if [ -z "$ALSA_CARD" ] || [ "$ALSA_CARD" = "0" ]; then
+  if amixer -c 0 scontrols 2>/dev/null | grep -qE "Aux|ADC|Capture"; then
+    ALSA_CARD=0
+  elif amixer -c 1 scontrols 2>/dev/null | grep -qE "Aux|ADC|Capture"; then
+    ALSA_CARD=1
+    echo "ALSA: äänikortti 1 (IQaudIO) havaittu, käytetään sitä."
+  else
+    ALSA_CARD="${ALSA_CARD:-0}"
+  fi
+fi
+export ALSA_CARD
 
 HOME_DIR=$(getent passwd "$RUN_AS_USER" 2>/dev/null | cut -d: -f6) || HOME_DIR="/home/$RUN_AS_USER"
 INSTALL_DIR="${INSTALL_DIR:-$HOME_DIR/radio-manager}"
@@ -103,12 +114,54 @@ sudo sed -i "s|__RUN_AS_USER__|$RUN_AS_USER|g" /etc/systemd/system/darkice.servi
 sudo systemctl daemon-reload
 echo "darkice.service installed (not enabled by default; Radio Manager controls it)."
 
+# Disable PipeWire (Raspberry Pi OS default audio server locks ALSA; DarkIce needs direct access)
+echo "Disabling PipeWire so DarkIce can use ALSA directly..."
+RUN_UID=$(id -u "$RUN_AS_USER")
+sudo -u "$RUN_AS_USER" XDG_RUNTIME_DIR="/run/user/$RUN_UID" systemctl --user mask pipewire pipewire-pulse wireplumber pipewire.socket pipewire-pulse.socket 2>/dev/null || true
+sudo -u "$RUN_AS_USER" XDG_RUNTIME_DIR="/run/user/$RUN_UID" systemctl --user stop pipewire pipewire-pulse wireplumber 2>/dev/null || true
+# If processes still run (e.g. no user session), force stop
+if command -v killall >/dev/null 2>&1; then
+  sudo killall -9 pipewire wireplumber pipewire-pulse 2>/dev/null || true
+fi
+echo "PipeWire disabled. ALSA is available for DarkIce."
+
 # systemd: darkice-gpio (placeholders __INSTALL_DIR__, __RUN_AS_USER__)
 sudo cp "$INSTALL_DIR/systemd/darkice-gpio.service" /etc/systemd/system/
 sudo sed -i "s|__INSTALL_DIR__|$INSTALL_DIR|g" /etc/systemd/system/darkice-gpio.service
 sudo sed -i "s|__RUN_AS_USER__|$RUN_AS_USER|g" /etc/systemd/system/darkice-gpio.service
 sudo systemctl daemon-reload
 echo "darkice-gpio.service installed (not enabled by default)."
+
+# ALSA: when using card 1 (IQaudIO), set it as system default so Darkice gets the device without conflict
+if [ "$ALSA_CARD" = "1" ]; then
+  echo "ALSA: asetetaan kortti 1 oletukseksi (/etc/asound.conf)..."
+  sudo tee /etc/asound.conf << 'ASOUNDEOF'
+# StreamPi: IQaudIO (card 1) as default so Darkice and ALSA use it
+defaults.ctl.card 1
+defaults.pcm.card 1
+defaults.pcm.device 0
+ASOUNDEOF
+fi
+
+# ALSA mixer: enable IQaudIO Codec Zero (DA7213) input routing for Aux capture
+# Without these, the codec stays in standby and arecord/DarkIce get no audio data.
+echo "ALSA: asetetaan IQaudIO-mikserin reititys (Aux → ADC capture)..."
+amixer -c "$ALSA_CARD" cset name='AUX Jack Switch' on               2>/dev/null || true
+amixer -c "$ALSA_CARD" cset name='Aux Switch' on,on                 2>/dev/null || true
+amixer -c "$ALSA_CARD" cset name='Mixin Left Aux Left Switch' on    2>/dev/null || true
+amixer -c "$ALSA_CARD" cset name='Mixin Right Aux Right Switch' on  2>/dev/null || true
+amixer -c "$ALSA_CARD" cset name='Mixin PGA Switch' on,on           2>/dev/null || true
+amixer -c "$ALSA_CARD" cset name='ADC Switch' on,on                 2>/dev/null || true
+sudo alsactl store 2>/dev/null || true
+echo "ALSA mikseri: Aux-reitti ja ADC aktiivinen, tila tallennettu."
+
+# Disable Pi built-in audio (snd_bcm2835) to avoid conflict with IQaudIO HAT
+BOOT_CONF="/boot/firmware/config.txt"
+[ -f "$BOOT_CONF" ] || BOOT_CONF="/boot/config.txt"
+if [ -f "$BOOT_CONF" ] && grep -q '^dtparam=audio=on' "$BOOT_CONF" 2>/dev/null; then
+  echo "ALSA: poistetaan sisäänäänen käytöstä (dtparam=audio=off) – vaatii käynnistyksen."
+  sudo sed -i 's/^dtparam=audio=on/dtparam=audio=off/' "$BOOT_CONF"
+fi
 
 # Sudoers: allow RUN_AS_USER to run systemctl, write darkice.cfg, and alsactl
 SUDOERS_FILE="/etc/sudoers.d/radio-manager"

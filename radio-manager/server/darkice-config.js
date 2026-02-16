@@ -3,8 +3,13 @@
  * Server, port, mountPoint, password, name can come from .env (not stored in repo).
  */
 const fs = require('fs');
-const { DARKICE_CFG } = require('./config');
+const { DARKICE_CFG, ALSA_CARD } = require('./config');
 const logger = require('./logger');
+
+/** Default capture device so Darkice uses same card as ALSA UI (IQaudIO is often card 1). */
+function defaultDevice() {
+  return `plughw:${ALSA_CARD || '0'},0`;
+}
 
 /** Values from .env override config file for these keys. */
 function getEnvOverrides() {
@@ -104,7 +109,7 @@ function toApi(parsed) {
     duration: general.duration !== undefined ? general.duration : '0',
     bufferSecs: general.bufferSecs !== undefined ? general.bufferSecs : '5',
     reconnect: general.reconnect !== undefined ? general.reconnect : 'yes',
-    device: input.device !== undefined ? input.device : 'plughw:0,0',
+    device: input.device !== undefined ? input.device : defaultDevice(),
     sampleRate: input.sampleRate !== undefined ? input.sampleRate : '44100',
     bitsPerSample: input.bitsPerSample !== undefined ? input.bitsPerSample : '16',
     channel: input.channel !== undefined ? input.channel : '1',
@@ -145,7 +150,7 @@ function fromApi(api) {
       reconnect: api.reconnect !== false && api.reconnect !== 'no' ? 'yes' : 'no',
     },
     input: {
-      device: String(api.device ?? 'plughw:0,0'),
+      device: String(api.device ?? defaultDevice()),
       sampleRate: String(api.sampleRate ?? '44100'),
       bitsPerSample: String(api.bitsPerSample ?? '16'),
       channel: String(api.channel ?? '1'),
@@ -192,9 +197,32 @@ function writeContent(content) {
   logger.darkice('darkice.cfg written', { path: DARKICE_CFG });
 }
 
+/** Build API-shaped config from .env only (when darkice.cfg is missing or unreadable). */
+function toApiFromEnvOnly() {
+  const env = getEnvOverrides();
+  return {
+    duration: '0',
+    bufferSecs: '5',
+    reconnect: 'yes',
+    device: defaultDevice(),
+    sampleRate: '44100',
+    bitsPerSample: '16',
+    channel: '1',
+    bitrateMode: 'cbr',
+    format: 'mp3',
+    bitrate: '128',
+    quality: '0.8',
+    server: env.server || '',
+    port: env.port || '8000',
+    mountPoint: env.mountPoint || 'live.mp3',
+    password: env.password ? '********' : '',
+    name: env.name || 'Stream',
+  };
+}
+
 function getForApi() {
   const parsed = read();
-  const api = toApi(parsed);
+  const api = parsed ? toApi(parsed) : toApiFromEnvOnly();
   if (!api) return null;
   return { ...api, fromEnv: getFromEnv() };
 }

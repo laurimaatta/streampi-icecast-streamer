@@ -152,11 +152,34 @@ Kytkentä: [KYTKENTA.md](KYTKENTA.md).
 
 | Ongelma | Tarkista |
 |---------|----------|
-| **En pääse kirjautumaan** | Käytä **https://** (ei http) ja oletus **admin** / **streamPi**. Jos tulee "Authentication required" tai kirjautuminen ei tallennu, kokeile: 1) Selaimessa https://\<Pi-IP\>:8443 (tai https://\<Pi-IP\> nginxin kautta). 2) Jos ei toimi, palauta kirjautuminen Pi:llä: `cd ~/radio-manager && node scripts/reset-web-login.js`. Käynnistä sivu uudelleen ja kirjaudu admin/streamPi, vaihda salasana Järjestelmä-välilehdeltä. |
-| Lähetys katkeaa heti | Tila ei saa olla "Laitteen nappi" jos kytkintä ei ole. Valitse "Päällä". |
-| darkice.cfg ei päivity | `journalctl -u radio-manager -n 50` – etsi "darkice.cfg write failed". Tarkista sudoers: `sudo cat /etc/sudoers.d/radio-manager`. |
-| Yhteys Icecastiin | `curl http://<palvelin>:<portti>/status-json.xsl` – tarkista onko stream aktiivinen. |
-| Logit | `journalctl -u radio-manager -f`, `journalctl -u darkice.service -f`, `journalctl -u darkice-gpio.service -f` |
+| **En pääse kirjautumaan** | Käytä https:// ja oletustunnukset (ohjeessa). Jos ei toimi: Pi:llä `cd ~/radio-manager && node scripts/reset-web-login.js`, sitten kirjaudu uudelleen ja vaihda salasana Järjestelmä-välilehdeltä. |
+| **Lähetys katkeaa heti / I/O error** | **PipeWire lukitsee äänilaitteen** → Disable PipeWire: `sudo -u user XDG_RUNTIME_DIR=/run/user/1000 systemctl --user mask pipewire pipewire-pulse wireplumber pipewire.socket pipewire-pulse.socket && sudo -u user XDG_RUNTIME_DIR=/run/user/1000 systemctl --user stop pipewire pipewire-pulse wireplumber && sudo systemctl restart darkice`. Asennusskripti tekee tämän automaattisesti. |
+| **Lähetys ei käynnisty** | Valitse tila "Päällä" (ei "Laitteen nappi" ilman kytkintä). Tarkista `journalctl -u darkice -f`. |
+| **Logit** | `journalctl -u radio-manager -f`, `journalctl -u darkice -f` |
+
+### PipeWire ja ALSA-konflikti
+
+Raspberry Pi OS käyttää PipeWirea, joka lukitsee ALSA-äänilaitteen. DarkIce tarvitsee suoran ALSA-pääsyn.
+
+**Ongelma:** `arecord: audio open error: Device or resource busy` tai `DarkIce: AlsaDspSource.cpp:273: Input/output error`
+
+**Ratkaisu:** Asennusskripti (`install.sh`) disabloi PipeWiren automaattisesti. Jos se on käynnistynyt uudelleen (reboot jne.):
+
+```bash
+# Maskaa PipeWire-palvelut (estää käynnistymisen)
+sudo -u user XDG_RUNTIME_DIR=/run/user/1000 systemctl --user mask \
+  pipewire pipewire-pulse wireplumber pipewire.socket pipewire-pulse.socket
+
+# Pysäytä
+sudo -u user XDG_RUNTIME_DIR=/run/user/1000 systemctl --user stop \
+  pipewire pipewire-pulse wireplumber
+
+# Jos prosesseja vielä näkyy: ps aux | grep pipewire
+sudo killall -9 pipewire wireplumber pipewire-pulse
+
+# Käynnistä DarkIce uudelleen
+sudo systemctl restart darkice
+```
 
 ---
 
