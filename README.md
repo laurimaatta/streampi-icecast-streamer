@@ -13,6 +13,13 @@ Internet-radiolähetyksen web-ohjaus Raspberry Pi Zero 2 W -laitteelle (IQAudio 
 | `wifi-provisioning/` | AP-tila ja verkkojen lisäys (Python, Flask) |
 | `docs/` | [Asennus](docs/ASENNUS.md), [kytkentä ja tarvikkeet](docs/KYTKENTA.md) |
 
+## Teknologia
+
+- **Web:** Node.js (Express), HTTPS (oma CA)
+- **Välityspalvelin:** nginx (HTTPS → Node)
+- **Ääni:** ALSA (IQaudIO Codec Zero / DA7213), Darkice (MP3/Ogg → Icecast)
+- **Provisioning:** Python, Flask (AP-tila, WiFi-verkkojen lisäys)
+
 ## Nopea käynnistys
 
 1. Asenna Raspbian ja aseta ensimmäinen WiFi SD-kortille (tai lisää myöhemmin AP-tilassa).
