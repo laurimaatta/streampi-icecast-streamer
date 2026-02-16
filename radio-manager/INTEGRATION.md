@@ -21,4 +21,4 @@
 
 ## WiFi / network
 
-- No changes to WiFi or network config. Use your existing setup (e.g. WiFi provisioning). Access the UI at `https://raspberrypizero.local:8443` or `https://<IP>:8443`.
+- No changes to WiFi or network config. Use your existing setup (e.g. WiFi hotspot / AP-tila). Access the UI at `https://raspberrypizero.local:8443` or `https://<IP>:8443`.

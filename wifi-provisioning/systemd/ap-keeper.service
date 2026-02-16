@@ -1,0 +1,13 @@
+[Unit]
+Description=WiFi-hotspot: pitää AP-tilan päällä (estää NM:n ottamasta wlan0 takaisin)
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/wifi-provisioning/ap-keeper.sh
+Environment=STATE_DIR=/run/wifi-provisioning
+Environment=SCRIPT_DIR=/opt/wifi-provisioning
+User=root
+
+[Install]
+WantedBy=multi-user.target

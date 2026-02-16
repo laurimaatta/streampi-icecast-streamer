@@ -1,0 +1,11 @@
+[Unit]
+Description=WiFi-hotspot: tarkista AP-tila 30 s välein (keeper)
+After=network.target
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=30
+Persistent=yes
+
+[Install]
+WantedBy=timers.target

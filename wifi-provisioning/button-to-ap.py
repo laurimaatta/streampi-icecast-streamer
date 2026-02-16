@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """
-Kuuntelee äänikortin nappia (GPIO27). Painallus käynnistää AP-tilan ja
-provisioning-web-palvelun. Aja root-oikeuksilla (systemd).
+Kuuntelee äänikortin nappia (GPIO27). Painallus käynnistää AP-tilan (hotspot) ja
+verkkojen lisäys -käyttöliittymän. Aja root-oikeuksilla (systemd).
 """
 import subprocess
 import sys

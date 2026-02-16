@@ -1,6 +1,6 @@
 # StreamPi
 
-Internet-radiolähetyksen web-ohjaus Raspberry Pi Zero 2 W -laitteelle (IQAudio Codec Zero). Yleiskäyttöinen ohjelma: lähetyksen käynnistys ja pysäytys, äänen säätö, varmuuskopiot. WiFi-provisioning: laite käynnistää oman verkkonsa, jos tunnettua verkkoa ei löydy, ja verkko voidaan lisätä selaimella.
+Internet-radiolähetyksen web-ohjaus Raspberry Pi Zero 2 W -laitteelle (IQAudio Codec Zero). Yleiskäyttöinen ohjelma: lähetyksen käynnistys ja pysäytys, äänen säätö, varmuuskopiot. WiFi-hotspot (AP-tila): laite käynnistää oman verkkonsa (access point), jos tunnettua verkkoa ei löydy, ja verkko voidaan lisätä selaimella.
 
 - **Koodi:** englanti
 - **Dokumentaatio:** suomi
@@ -10,7 +10,7 @@ Internet-radiolähetyksen web-ohjaus Raspberry Pi Zero 2 W -laitteelle (IQAudio 
 | Kansio | Kuvaus |
 |--------|--------|
 | `radio-manager/` | StreamPi-webohjaus (Node.js, HTTPS) |
-| `wifi-provisioning/` | AP-tila ja verkkojen lisäys (Python, Flask) |
+| `wifi-provisioning/` | WiFi-hotspot: AP-tila ja verkkojen lisäys (Python, Flask) |
 | `icecast-testserver/` | Paikallinen Icecast-testipalvelin (Docker) – lähetyksen testaamiseen |
 | `docs/` | [Asennus](docs/ASENNUS.md), [kytkentä ja tarvikkeet](docs/KYTKENTA.md) |
 
@@ -19,7 +19,7 @@ Internet-radiolähetyksen web-ohjaus Raspberry Pi Zero 2 W -laitteelle (IQAudio 
 - **Web:** Node.js (Express), HTTPS (oma CA)
 - **Välityspalvelin:** nginx (HTTPS → Node)
 - **Ääni:** ALSA (IQaudIO Codec Zero / DA7213), Darkice (MP3/Ogg → Icecast)
-- **Provisioning:** Python, Flask (AP-tila, WiFi-verkkojen lisäys)
+- **WiFi-hotspot:** Python, Flask (AP-tila, verkkojen lisäys selaimella)
 - **Testipalvelin:** `icecast-testserver/` – Docker-pohjainen Icecast (portti 8000), ohje: [icecast-testserver/README.md](icecast-testserver/README.md)
 
 ## Nopea käynnistys

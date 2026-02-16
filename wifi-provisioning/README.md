@@ -1,8 +1,8 @@
-# WiFi-provisioning (AP-tila)
+# WiFi-hotspot (AP-tila)
 
-Kun laite ei löydä tunnettua WiFi-verkkoa, se käynnistää access pointin (SSID: **RaspberryStream-Setup**, salasana: **setup1234**). Verkko voidaan lisätä selaimella osoitteessa **http://10.42.0.1:8080**.
+Kun laite ei löydä tunnettua WiFi-verkkoa, se käynnistää access pointin / hotspotin (SSID: **RaspberryStream-Setup**, salasana: **setup1234**). Verkko voidaan lisätä selaimella osoitteessa **http://10.42.0.1:8080**.
 
-**Asennus:** WiFi-provisioning asennetaan normaalin StreamPi-asennuksen yhteydessä. Käytä [docs/ASENNUS.md](../docs/ASENNUS.md) – joko `./scripts/asenna-pi.sh pi@<Pi-IP>` tai Pi:llä `./scripts/setup-pi.sh`. Erillistä asennusta ei tarvita.
+**Asennus:** WiFi-hotspot asennetaan normaalin StreamPi-asennuksen yhteydessä. Käytä [docs/ASENNUS.md](../docs/ASENNUS.md) – joko `./scripts/asenna-pi.sh pi@<Pi-IP>` tai Pi:llä `./scripts/setup-pi.sh`. Erillistä asennusta ei tarvita.
 
 Käyttö, nappi (GPIO27) ja vianetsintä: **docs/ASENNUS.md** §6 ja §10.
 

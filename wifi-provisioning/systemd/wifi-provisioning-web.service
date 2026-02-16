@@ -1,5 +1,5 @@
 [Unit]
-Description=WiFi provisioning web UI (started when AP is active)
+Description=WiFi-hotspot: verkkojen lisäys -käyttöliittymä (käynnistyy kun AP on päällä)
 After=network.target
 # Do not start automatically; started by wifi-watchdog when AP is up
 

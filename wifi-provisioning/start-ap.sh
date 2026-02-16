@@ -63,6 +63,7 @@ cleanup_and_fail() {
   ip addr flush dev wlan0 2>/dev/null || true
   ip link set wlan0 up 2>/dev/null || true
   nmcli device set wlan0 managed yes 2>/dev/null || true
+  systemctl start dnsmasq.service 2>/dev/null || true
   rm -f "$STATE_DIR/ap-active" "$STATE_DIR/ap-method" "$STATE_DIR/ap-ip"
   log "FAIL: $1"
   exit 1
@@ -115,6 +116,10 @@ bind-interfaces
 dhcp-range=192.168.4.10,192.168.4.50,255.255.255.0,12h
 address=/#/${AP_IP}
 EOF
+
+# Stop system dnsmasq so our AP dnsmasq can use wlan0 (no port/DHCP conflict)
+systemctl stop dnsmasq.service 2>/dev/null || true
+sleep 0.5
 
 # Start dnsmasq
 log "hostapd: Starting dnsmasq"

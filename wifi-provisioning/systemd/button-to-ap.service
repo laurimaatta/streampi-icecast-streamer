@@ -1,5 +1,5 @@
 [Unit]
-Description=Äänikortin nappi (GPIO27) → käynnistä AP-tila
+Description=WiFi-hotspot: äänikortin nappi (GPIO27) käynnistää AP-tilan
 After=multi-user.target
 # Ei vaadi verkkoa; kuuntelee vain nappia
 

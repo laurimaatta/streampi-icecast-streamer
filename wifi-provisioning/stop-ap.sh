@@ -43,6 +43,8 @@ else
   sleep 1
   ip link set wlan0 up 2>/dev/null || true
   nmcli device connect wlan0 2>/dev/null || true
+  # Järjestelmän dnsmasq usein maskattu tässä asetuksessa; käynnistys harmiton
+  systemctl start dnsmasq.service 2>/dev/null || true
 fi
 
 # Clean state files

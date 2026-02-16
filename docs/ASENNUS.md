@@ -1,6 +1,6 @@
 # StreamPi – Asennus puhtaalle Raspbianille
 
-Ohjeessa asennetaan StreamPi (lähetysohjaus) ja WiFi-provisioning puhtaalle Raspberry Pi OS -asennukselle. Kohde: **Raspberry Pi Zero 2 W**, äänikortti **IQAudio Codec Zero**.
+Ohjeessa asennetaan StreamPi (lähetysohjaus) ja WiFi-hotspot (AP-tila) puhtaalle Raspberry Pi OS -asennukselle. Kohde: **Raspberry Pi Zero 2 W**, äänikortti **IQAudio Codec Zero**.
 
 Asennus on suunniteltu toimimaan kerralla juuri asennetulla Pi Zero 2W:lla.
 
@@ -31,7 +31,7 @@ Asennus on suunniteltu toimimaan kerralla juuri asennetulla Pi Zero 2W:lla.
 
 Esim. `./scripts/asenna-pi.sh pi@10.118.235.92` tai `./scripts/asenna-pi.sh pi@raspberrypi.local`. Vain kopio (asennus ajetaan Pi:llä käsin): `./scripts/asenna-pi.sh pi@<Pi-IP> --copy-only`
 
-Skripti kopioi ohjelman Pi:lle ja ajaa koko asennuksen etänä (apt, install.sh, WiFi-provisioning, käynnistys).
+Skripti kopioi ohjelman Pi:lle ja ajaa koko asennuksen etänä (apt, install.sh, WiFi-hotspot, käynnistys).
 
 **Vaihtoehto 2 – vain kopioi, asenna sitten Pi:llä käsin:**
 
@@ -105,14 +105,14 @@ Asennuksen yhteydessä skripti kysyy, haluatko luoda HTTPS-sertifikaatin ja näy
 
 ---
 
-## 6. WiFi-provisioning (AP-tila)
+## 6. WiFi-hotspot (AP-tila)
 
-WiFi-provisioning **asennetaan normaalin asennuksen yhteydessä** (asenna-pi.sh / setup-pi.sh). Erillistä asennusta ei tarvita.
+WiFi-hotspot **asennetaan normaalin asennuksen yhteydessä** (asenna-pi.sh / setup-pi.sh). Erillistä asennusta ei tarvita.
 
 - **Normaali:** Laite yhdistää SD-kortille / aiemmin lisättyyn verkkoon.
-- **Ei verkkoa:** Noin 3 minuutin jälkeen laite käynnistää AP-verkon (SSID: RaspberryStream-Setup, salasana: setup1234). Yhdistä puhelimella ja avaa **http://10.42.0.1:8080** (portti 8080, jotta nginx voi pitää portin 80).
+- **Ei verkkoa:** Noin 2 minuutin jälkeen laite käynnistää access pointin / hotspotin (SSID: RaspberryStream-Setup, salasana: setup1234). Yhdistä puhelimella ja avaa **http://10.42.0.1:8080** (portti 8080, jotta nginx voi pitää portin 80).
 - **Nappi:** Painallus (GPIO27, äänikortin nappi) käynnistää AP-tilan heti.
-- **Provisioning-osoite:** http://10.42.0.1:8080
+- **Hotspot-osoite (verkkojen lisäys):** http://10.42.0.1:8080
 
 ---
 
@@ -124,7 +124,7 @@ WiFi-provisioning **asennetaan normaalin asennuksen yhteydessä** (asenna-pi.sh 
 
 Tai IP:llä: `./scripts/asenna-pi.sh pi@10.118.235.92`
 
-Skripti kopioi ohjelman Pi:lle ja ajaa koko asennuksen etänä (apt, install.sh, WiFi-provisioning). Tämän jälkeen avaa selaimessa https://\<Pi-IP\> (tai https://\<Pi-IP\>:8443) ja täytä lähetyksen asetukset Lähetys-välilehdeltä.
+Skripti kopioi ohjelman Pi:lle ja ajaa koko asennuksen etänä (apt, install.sh, WiFi-hotspot). Tämän jälkeen avaa selaimessa https://\<Pi-IP\> (tai https://\<Pi-IP\>:8443) ja täytä lähetyksen asetukset Lähetys-välilehdeltä.
 
 ---
 
@@ -155,6 +155,8 @@ Kytkentä: [KYTKENTA.md](KYTKENTA.md).
 | **En pääse kirjautumaan** | Käytä https:// ja oletustunnukset (ohjeessa). Jos ei toimi: Pi:llä `cd ~/radio-manager && node scripts/reset-web-login.js`, sitten kirjaudu uudelleen ja vaihda salasana Järjestelmä-välilehdeltä. |
 | **Lähetys katkeaa heti / I/O error** | **PipeWire lukitsee äänilaitteen** → Disable PipeWire: `sudo -u user XDG_RUNTIME_DIR=/run/user/1000 systemctl --user mask pipewire pipewire-pulse wireplumber pipewire.socket pipewire-pulse.socket && sudo -u user XDG_RUNTIME_DIR=/run/user/1000 systemctl --user stop pipewire pipewire-pulse wireplumber && sudo systemctl restart darkice`. Asennusskripti tekee tämän automaattisesti. |
 | **Lähetys ei käynnisty** | Valitse tila "Päällä" (ei "Laitteen nappi" ilman kytkintä). Tarkista `journalctl -u darkice -f`. |
+| **Hotspot ei ilmesty** | Tarkista: `systemctl is-enabled wifi-watchdog.timer button-to-ap.service` (pitää olla enabled). Jos masked: `sudo systemctl unmask wifi-watchdog.timer button-to-ap.service && sudo systemctl enable --now wifi-watchdog.timer button-to-ap.service`. Tarkista että skriptit ovat kopioituneet: `wc -c /opt/wifi-provisioning/start-ap.sh` (ei saa olla 0). Älä aja setup-pi.sh:ta suoraan `sudo`lla – aja ilman sudo: `./scripts/setup-pi.sh`. |
+| **Hotspot katoaa hetken päästä** | AP-keeper pitää AP-tilan päällä (estää NM:n ottamasta wlan0 takaisin). Tarkista: `systemctl is-active ap-keeper.timer`. Lokit: `sudo cat /run/wifi-provisioning/start-ap.log` ja `sudo cat /run/wifi-provisioning/ap-keeper.log`. |
 | **Logit** | `journalctl -u radio-manager -f`, `journalctl -u darkice -f` |
 
 ### PipeWire ja ALSA-konflikti
@@ -199,6 +201,6 @@ Jos `raspberrypi.local` tai vastaava ei resolvdu (mDNS/Avahi):
 |-------|-------------------|
 | StreamPi (web) | https://\<Pi-IP\>:8443 tai https://\<Pi-IP\> / http://\<Pi-IP\> (nginx) |
 | Web-kirjautuminen | **admin** / **streamPi** – vaihda salasana Järjestelmä-välilehdeltä |
-| WiFi-provisioning (AP-tilassa) | http://10.42.0.1:8080 |
+| WiFi-hotspot (AP-tilassa, verkkojen lisäys) | http://10.42.0.1:8080 |
 | Logit | `journalctl -u radio-manager -f` |
 | CA-sertifikaatti | `~/.radio-manager/certs/ca/ca.pem` |

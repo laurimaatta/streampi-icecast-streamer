@@ -1,5 +1,5 @@
 [Unit]
-Description=WiFi provisioning: check connectivity and start AP if no network
+Description=WiFi-hotspot: tarkista yhteydet, käynnistä AP-tila (hotspot) jos verkkoa ei ole
 After=network-online.target
 Wants=network-online.target
 

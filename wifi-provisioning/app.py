@@ -1,5 +1,5 @@
 """
-WiFi provisioning web UI. Served when device is in AP mode; form to add a new WiFi network.
+WiFi-hotspot: verkkojen lisäys -käyttöliittymä. Näytetään kun laite on AP-tilassa (hotspot); lomake uuden WiFi-verkon lisäämiseksi.
 """
 import os
 import re
@@ -19,7 +19,7 @@ HTML = """
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>WiFi-asetukset</title>
+  <title>WiFi-asetukset (hotspot)</title>
   <style>
     :root { --bg: #1a1b26; --surface: #24283b; --text: #c0caf5; --accent: #7aa2f7; --muted: #565f89; }
     * { box-sizing: border-box; }

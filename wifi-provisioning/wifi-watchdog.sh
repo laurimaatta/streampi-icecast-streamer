@@ -1,5 +1,5 @@
 #!/bin/sh
-# Check connectivity; if no default route for several cycles, start AP + provisioning web UI.
+# Check connectivity; if no default route for several cycles, start AP (hotspot) + web UI for adding networks.
 # Run as root (e.g. from systemd).
 
 set -e
@@ -38,7 +38,7 @@ logger -t wifi-watchdog "No connectivity for ${failed} cycles, starting AP"
 # Start AP (this drops current WiFi client connection!)
 "$SCRIPT_DIR/start-ap.sh" || exit 1
 
-# Start provisioning web UI (separate systemd service)
+# Start hotspot web UI (separate systemd service)
 /usr/bin/systemctl start wifi-provisioning-web.service 2>/dev/null || true
 
 exit 0

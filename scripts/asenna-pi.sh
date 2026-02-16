@@ -25,7 +25,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 echo "Kohde: $HOST"
-echo "Kopioidaan radio-manager ja wifi-provisioning..."
+echo "Kopioidaan radio-manager ja wifi-hotspot (wifi-provisioning)..."
 scp -r "$REPO_ROOT/radio-manager" "$REPO_ROOT/wifi-provisioning" "$HOST:~/"
 
 if [ "$DO_SETUP" = "1" ]; then

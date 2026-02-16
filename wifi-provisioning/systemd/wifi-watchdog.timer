@@ -1,9 +1,9 @@
 [Unit]
-Description=Run WiFi provisioning watchdog every 90 seconds
+Description=WiFi-hotspot: tarkista verkko 90 s välein, käynnistä AP jos ei yhteyttä
 After=network-online.target
 
 [Timer]
-OnBootSec=2min
+OnBootSec=1min
 OnUnitActiveSec=90
 Persistent=yes
 
