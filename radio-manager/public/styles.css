@@ -92,6 +92,16 @@ body {
 .status-pill.active { background: var(--success); color: #fff; }
 .status-pill.inactive { background: var(--surface-elevated); color: var(--muted); border: 1px solid var(--border); }
 .status-pill.gpio { background: var(--accent); color: #fff; }
+.status-pill-mute { background: var(--danger); color: #fff; }
+.status-pill-mute-unmuted { background: var(--surface-elevated); color: var(--muted); border: 1px solid var(--border); }
+.header-right { flex-wrap: wrap; }
+.mute-state-label { font-size: 1rem; font-weight: 500; margin: 0.6rem 0 0; }
+.mute-state-label.is-muted { color: var(--danger); }
+.toggle-row { display: flex; flex-direction: column; gap: 0.4rem; }
+.toggle-label { display: flex; align-items: center; gap: 0.55rem; font-weight: 500; cursor: pointer; }
+.toggle-label input[type="checkbox"] { width: 1.1rem; height: 1.1rem; cursor: pointer; accent-color: var(--accent); }
+.audio-control.disabled-by-mute { opacity: 0.65; pointer-events: none; }
+.audio-control.disabled-by-mute input[type="range"] { cursor: not-allowed; }
 
 .tabs {
   display: flex;

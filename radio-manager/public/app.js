@@ -1,6 +1,7 @@
 (function () {
   const API = '';
   const streamStatus = document.getElementById('streamStatus');
+  const muteStatus = document.getElementById('muteStatus');
   const tabStreaming = document.getElementById('tab-streaming');
   const tabAudio = document.getElementById('tab-audio');
   const tabSystem = document.getElementById('tab-system');
@@ -17,6 +18,7 @@
   const importFile = document.getElementById('importFile');
   const alsaStateIndicator = document.getElementById('alsaStateIndicator');
   let alsaDirty = false;
+  let lastMuteStatus = { muted: false, mode: 'OFF' };
 
   const T = {
     toastSaved: 'Asetukset tallennettu.',
@@ -130,6 +132,81 @@
     if (appContent) appContent.style.display = '';
   }
 
+  async function loadMuteStatus() {
+    try {
+      const data = await fetchJson('/api/mute/status');
+      const effective = data.effectiveMuted ?? data.muted;
+      const wasMuted = lastMuteStatus.muted;
+      lastMuteStatus = { muted: effective, hasMuteSwitch: data.hasMuteSwitch };
+
+      // Ääni-välilehdellä: päivitä linjatulon sliderit vastaamaan todellista tilaa (nolla kun hiljennetty, palautus kun ääni päällä)
+      if (panelAudio && !panelAudio.hidden && (wasMuted !== effective)) {
+        loadAudioControls();
+      }
+
+      // Yläpalkin pill – näkyy aina kaikilla välilehdillä
+      if (muteStatus) {
+        muteStatus.hidden = false;
+        muteStatus.textContent = effective ? 'Hiljennetty' : 'Ääni';
+        muteStatus.className = 'status-pill ' + (effective ? 'status-pill-mute' : 'status-pill-mute-unmuted');
+      }
+
+      // Lähetys-välilehden vaimennus-kortti: kaksi tilaa
+      const noSwitchPanel = document.getElementById('muteNoSwitchPanel');
+      const switchPanel = document.getElementById('muteSwitchPanel');
+      if (noSwitchPanel) noSwitchPanel.hidden = data.hasMuteSwitch;
+      if (switchPanel) switchPanel.hidden = !data.hasMuteSwitch;
+
+      if (!data.hasMuteSwitch) {
+        // Web-nappi
+        const btn = document.getElementById('btnMuteToggle');
+        if (btn) btn.textContent = effective ? 'Poista vaimennus' : 'Vaimenna';
+        const lbl = document.getElementById('muteStateLabel');
+        if (lbl) {
+          lbl.textContent = effective ? 'Hiljennetty' : 'Ääni päällä';
+          lbl.className = 'mute-state-label' + (effective ? ' is-muted' : '');
+        }
+      } else {
+        // Kytkin: näytetään tila yhdellä lauseella
+        const lbl = document.getElementById('muteStateLabelSwitch');
+        if (lbl) {
+          const hw = data.hardwareMuted;
+          lbl.textContent = (hw ? 'Hiljennetty' : 'Ääni päällä') + ' – kytkin';
+          lbl.className = 'mute-state-label' + (hw ? ' is-muted' : '');
+        }
+      }
+
+      // Järjestelmä-välilehden checkbox
+      const chk = document.getElementById('chkMuteSwitch');
+      if (chk && chk !== document.activeElement) chk.checked = Boolean(data.hasMuteSwitch);
+
+      updateCaptureDisabledState();
+    } catch (_) {
+      lastMuteStatus = { muted: false, hasMuteSwitch: false };
+      if (muteStatus) {
+        muteStatus.hidden = false;
+        muteStatus.textContent = '—';
+        muteStatus.className = 'status-pill status-pill-mute-unmuted';
+      }
+      updateCaptureDisabledState();
+    }
+  }
+
+  function updateCaptureDisabledState() {
+    const group = document.getElementById('alsaGroupCapture');
+    const hint = document.getElementById('muteDisabledHint');
+    const disabled = lastMuteStatus.muted;
+    if (group) {
+      group.querySelectorAll('.audio-control').forEach((el) => {
+        el.classList.toggle('disabled-by-mute', disabled);
+        el.querySelectorAll('input[type="range"]').forEach((input) => {
+          input.disabled = disabled;
+        });
+      });
+    }
+    if (hint) hint.style.display = disabled ? 'block' : 'none';
+  }
+
   async function loadStreamingStatus() {
     const data = await fetchJson('/api/streaming/status');
     setStreamStatus(data);
@@ -159,6 +236,29 @@
     }
     return data;
   }
+
+  document.getElementById('btnMuteToggle')?.addEventListener('click', async () => {
+    try {
+      const muted = !lastMuteStatus.muted;
+      await fetchJson('/api/mute/set', { method: 'PUT', body: JSON.stringify({ muted }) });
+      showToast(muted ? 'Vaimennettu' : 'Vaimennus poistettu');
+      loadMuteStatus();
+    } catch (err) {
+      showToast(T.error + err.message);
+    }
+  });
+
+  document.getElementById('chkMuteSwitch')?.addEventListener('change', async (e) => {
+    try {
+      const hasMuteSwitch = e.target.checked;
+      await fetchJson('/api/mute/switch-setting', { method: 'PUT', body: JSON.stringify({ hasMuteSwitch }) });
+      showToast(hasMuteSwitch ? 'Vaimennuskytkin käytössä' : 'Vaimennuskytkin pois');
+      loadMuteStatus();
+    } catch (err) {
+      e.target.checked = !e.target.checked; // peruuta muutos virhetilanteessa
+      showToast(T.error + err.message);
+    }
+  });
 
   async function loadDarkice() {
     const data = await fetchJson('/api/darkice');
@@ -414,6 +514,7 @@
     playback.forEach(([name, c]) => renderAlsaControl(name, c, audioControlsPlayback));
     if (audioControlsALC) alc.forEach(([name, c]) => renderAlsaControl(name, c, audioControlsALC));
     await updateAlsaStateIndicator();
+    updateCaptureDisabledState();
   }
 
   function debounce(fn, ms) {
@@ -560,7 +661,10 @@
       showToast(T.error + (err.message || (err.error || 'Syötä nykyinen salasana.')));
     }
   });
-  setInterval(loadStreamingStatus, 5000);
+  setInterval(() => {
+    loadStreamingStatus();
+    loadMuteStatus();
+  }, 5000);
 
   async function init() {
     try {
@@ -574,7 +678,7 @@
       showLoginOverlay();
       return;
     }
-    Promise.all([loadStreamingStatus(), loadDarkice(), loadAudioDevices()]).catch((err) => {
+    Promise.all([loadStreamingStatus(), loadMuteStatus(), loadDarkice(), loadAudioDevices()]).catch((err) => {
       showToast(T.loadError + err.message);
     });
   }

@@ -27,6 +27,7 @@ function buildBackupPayload() {
     darkice: darkice || {},
     app: {
       streamingMode: app.streamingMode,
+      hasMuteSwitch: Boolean(app.hasMuteSwitch),
     },
     alsa: null,
   };
@@ -86,6 +87,7 @@ function restoreFromPayload(payload) {
     try {
       appConfig.write({
         streamingMode: payload.app.streamingMode || 'SWITCH',
+        hasMuteSwitch: Boolean(payload.app.hasMuteSwitch),
       });
     } catch (e) {
       errors.push({ step: 'app', error: e.message });

@@ -44,6 +44,14 @@ function setStreamingMode(mode) {
   return write({ streamingMode: normalized });
 }
 
+function getHasMuteSwitch() {
+  return Boolean(read().hasMuteSwitch);
+}
+
+function setHasMuteSwitch(value) {
+  return write({ hasMuteSwitch: Boolean(value) });
+}
+
 function setAuth(username, password) {
   const crypto = require('crypto');
   const hash = password ? crypto.createHash('sha256').update(password).digest('hex') : null;
@@ -57,5 +65,7 @@ module.exports = {
   write,
   getStreamingMode,
   setStreamingMode,
+  getHasMuteSwitch,
+  setHasMuteSwitch,
   setAuth,
 };

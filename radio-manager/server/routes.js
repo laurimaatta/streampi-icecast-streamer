@@ -9,6 +9,7 @@ const darkiceConfig = require('./darkice-config');
 const darkiceControl = require('./darkice-control');
 const appConfig = require('./app-config');
 const streamingMode = require('./streaming-mode');
+const muteControl = require('./mute-control');
 const alsa = require('./alsa');
 const backup = require('./backup');
 const { validate: validateDarkice } = require('./validate-darkice');
@@ -142,6 +143,41 @@ router.put('/api/streaming/mode', (req, res) => {
   }
 });
 
+// ---------- Mute (vaimennus) ----------
+router.get('/api/mute/status', (req, res) => {
+  try {
+    res.json(muteControl.getMuteStatus());
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Toggle web mute (only when hasMuteSwitch=false)
+router.put('/api/mute/set', async (req, res) => {
+  try {
+    if (appConfig.getHasMuteSwitch()) {
+      return res.status(400).json({ error: 'Vaimennuskytkin on käytössä – tila ohjataan kytkimellä.' });
+    }
+    const muted = req.body?.muted === true || req.body?.muted === 'true';
+    const r = await muteControl.setWebMute(muted);
+    if (r.ok) res.json({ ok: true, muted }); else res.status(500).json({ error: r.error });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Save hasMuteSwitch setting (from system tab)
+router.put('/api/mute/switch-setting', async (req, res) => {
+  try {
+    const hasMuteSwitch = Boolean(req.body?.hasMuteSwitch);
+    appConfig.setHasMuteSwitch(hasMuteSwitch);
+    const r = await muteControl.applyMuteSwitch(hasMuteSwitch);
+    res.json({ ok: r.ok !== false, hasMuteSwitch });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ---------- Audio (ALSA) ----------
 router.get('/api/audio/cards', (req, res) => {
   try {
@@ -231,6 +267,7 @@ router.post('/api/backup/import', (req, res) => {
   const result = backup.restoreFromPayload(payload);
   if (result.ok) {
     streamingMode.applyCurrentMode();
+    muteControl.applyMuteMode();
     res.json({ ok: true });
   } else {
     res.status(400).json({ ok: false, errors: result.errors });
@@ -264,6 +301,7 @@ router.post('/api/backup/restore', (req, res) => {
   const result = backup.restoreFromLocalFile(pathToUse);
   if (result.ok) {
     streamingMode.applyCurrentMode();
+    muteControl.applyMuteMode();
     res.json({ ok: true });
   } else {
     res.status(400).json({ error: result.error });
@@ -277,7 +315,11 @@ router.get('/api/config', (req, res) => {
     const auth = c.auth
       ? { enabled: true, username: c.auth.username }
       : { enabled: false };
-    res.json({ streamingMode: c.streamingMode, auth });
+    res.json({
+      streamingMode: c.streamingMode,
+      hasMuteSwitch: Boolean(c.hasMuteSwitch),
+      auth,
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

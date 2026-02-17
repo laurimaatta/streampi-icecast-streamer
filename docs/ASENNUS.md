@@ -176,6 +176,8 @@ Skripti kopioi ohjelman Pi:lle ja ajaa koko asennuksen etänä (apt, install.sh,
 - **Kytkin:** Lähetys seuraa fyysistä kytkintä (GPIO 17). Kytkin suljettu = lähetys päällä, kytkin auki = pois.
 - **Web UI:** Ohjaa web-napilla (Käynnistä / Lopeta). Käynnistä uudelleen -nappi näkyy kun lähetys on käynnissä, riippumatta siitä miten lähetys on käynnistetty.
 
+**Vaimennus (valinnainen):** Linja-sisääntulo (AUX) voidaan hiljentää kytkimellä tai web-napilla. **Järjestelmä**-välilehden Laiteasetuksista valitaan "Vaimennuskytkin käytössä". Jos kytkin on käytössä: tila ohjataan fyysisellä kytkimellä (GPIO 22, pin 15). Jos pois: Lähetys-välilehdellä on nappi Vaimenna / Poista vaimennus (tila nollautuu laitteen käynnistyksen yhteydessä). Hiljennystilassa äänenvoimakkuuden säätö on pois käytöstä; Ääni-välilehden sliderit näyttävät aina todellisen tilan (nolla kun hiljennetty, palautus kun ääni päällä). Älä käytä GPIO 23 (pin 16) – se on varattu äänikortin LEDille.
+
 Kytkentä: [KYTKENTA.md](KYTKENTA.md).
 
 ---

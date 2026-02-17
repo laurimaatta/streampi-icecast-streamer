@@ -132,6 +132,14 @@ sudo sed -i "s|__RUN_AS_USER__|$RUN_AS_USER|g" /etc/systemd/system/darkice-gpio.
 sudo systemctl daemon-reload
 echo "darkice-gpio.service installed (not enabled by default)."
 
+# systemd: mute-gpio (vaimennuskytkin, GPIO 22)
+sudo cp "$INSTALL_DIR/systemd/mute-gpio.service" /etc/systemd/system/
+sudo sed -i "s|__INSTALL_DIR__|$INSTALL_DIR|g" /etc/systemd/system/mute-gpio.service
+sudo sed -i "s|__RUN_AS_USER__|$RUN_AS_USER|g" /etc/systemd/system/mute-gpio.service
+sudo sed -i "s|__ALSA_CARD__|${ALSA_CARD:-0}|g" /etc/systemd/system/mute-gpio.service
+sudo systemctl daemon-reload
+echo "mute-gpio.service installed (not enabled by default)."
+
 # ALSA: when using card 1 (IQaudIO), set it as system default so Darkice gets the device without conflict
 if [ "$ALSA_CARD" = "1" ]; then
   echo "ALSA: asetetaan kortti 1 oletukseksi (/etc/asound.conf)..."
@@ -167,7 +175,7 @@ fi
 SUDOERS_FILE="/etc/sudoers.d/radio-manager"
 sudo tee "$SUDOERS_FILE" << EOF
 # StreamPi: allow controlling DarkIce and GPIO service, writing config, ALSA state
-$RUN_AS_USER ALL=(ALL) NOPASSWD: /bin/systemctl start darkice.service, /bin/systemctl stop darkice.service, /bin/systemctl restart darkice.service, /bin/systemctl start darkice-gpio.service, /bin/systemctl stop darkice-gpio.service, /bin/systemctl status darkice.service, /bin/systemctl status darkice-gpio.service
+$RUN_AS_USER ALL=(ALL) NOPASSWD: /bin/systemctl start darkice.service, /bin/systemctl stop darkice.service, /bin/systemctl restart darkice.service, /bin/systemctl start darkice-gpio.service, /bin/systemctl stop darkice-gpio.service, /bin/systemctl start mute-gpio.service, /bin/systemctl stop mute-gpio.service, /bin/systemctl status darkice.service, /bin/systemctl status darkice-gpio.service, /bin/systemctl status mute-gpio.service
 $RUN_AS_USER ALL=(ALL) NOPASSWD: /usr/bin/alsactl *
 $RUN_AS_USER ALL=(ALL) NOPASSWD: /usr/sbin/alsactl *
 # Allow writing /etc/darkice.cfg via tee (stdin from StreamPi; allow both common paths)

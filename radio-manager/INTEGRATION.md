@@ -14,6 +14,14 @@
   - **WEBUI**: Radio Manager stops `darkice-gpio.service`. The web UI controls the stream via Käynnistä/Lopeta button.
 - **Pin**: GPIO 17 (BCM). Pull-up: switch closed (to GND) = stream on, open = stream off. To change pin, edit `scripts/darkice_gpio.py` (BUTTON_PIN) and restart `darkice-gpio.service` when in SWITCH mode.
 
+## Mute (vaimennus)
+
+- **Ohjaus:** Järjestelmä-välilehdeltä "Vaimennuskytkin käytössä" (tallennetaan `hasMuteSwitch`). Jos päällä: fyysinen kytkin (GPIO 22) ohjaa. Jos pois: Lähetys-välilehden nappi ohjaa; tila on muistissa eikä tallennu käynnistyksen yli.
+- **Script**: `scripts/aux_mute_gpio.py` – kytkin GPIO 22. Suljettu (LOW) = hiljennetty, auki (HIGH) = ääni. Tallentaa ja palauttaa ALSA "Aux" ja "Aux Volume" -tasot. Tila: `~/.radio-manager/mute-state.json`.
+- **Service**: `mute-gpio.service` käynnistetään kun hasMuteSwitch=true.
+- **API**: `GET /api/mute/status` → `{ muted, hasMuteSwitch, hardwareMuted, gpioActive }`. `PUT /api/mute/set` (vain ilman kytkintä) → `{ muted }`. `PUT /api/mute/switch-setting` → `{ hasMuteSwitch }`.
+- **Pin**: GPIO 22 (BCM, pin 15). Älä käytä GPIO 23 (varattu äänikortin LED D2:lle).
+
 ## ALSA
 
 - Radio Manager uses `amixer -c 1` (card 1) and `alsactl` for store/restore. Stored state path: `~/.radio-manager/asound.state`.

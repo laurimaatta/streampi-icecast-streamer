@@ -23,6 +23,7 @@
     <h1>StreamPi</h1>
     <div class="header-right">
       <div class="status-pill" id="streamStatus" aria-live="polite">—</div>
+      <div class="status-pill" id="muteStatus" aria-live="polite">—</div>
       <button type="button" id="btnLogout" class="btn-logout" title="Kirjaudu ulos">Kirjaudu ulos</button>
     </div>
   </header>
@@ -50,6 +51,23 @@
             <button type="button" id="btnRestart" style="display:none;">Käynnistä uudelleen</button>
           </div>
           <p id="streamSwitchHint" class="muted small" style="display:none;">Lähetys käynnistyy ja pysähtyy fyysisellä kytkimellä.</p>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Vaimennus</h2>
+
+        <!-- Ei kytkintä: yksinkertainen web-nappi -->
+        <div id="muteNoSwitchPanel">
+          <div class="btn-group">
+            <button type="button" id="btnMuteToggle">Vaimenna</button>
+          </div>
+          <p id="muteStateLabel" class="mute-state-label" aria-live="polite">Ääni päällä</p>
+        </div>
+
+        <!-- Kytkin käytössä: pelkkä tila -->
+        <div id="muteSwitchPanel" hidden>
+          <p id="muteStateLabelSwitch" class="mute-state-label" aria-live="polite">Ääni päällä – kytkin</p>
+          <p class="muted small">Tila ohjataan fyysisellä kytkimellä.</p>
         </div>
       </div>
       <div class="card">
@@ -86,6 +104,7 @@
       <div class="card">
         <h2>Äänen säätö</h2>
         <p class="muted">Voimakkuudet ja tasot. Muutokset tulevat voimaan heti. Tallenna tila, jotta asetukset säilyvät laitteen uudelleenkäynnistyksen jälkeen.</p>
+        <p id="muteDisabledHint" class="muted small" style="display:none;">Hiljennystila päällä: äänenvoimakkuuden säätö on pois käytöstä. Avaa vaimennuskytkin tai valitse vaimennus "Pois" lähetys-välilehdeltä.</p>
         <p id="alsaStateIndicator" class="muted small" aria-live="polite">—</p>
         <div class="alsa-groups">
           <div class="alsa-group" id="alsaGroupCapture">
@@ -108,6 +127,16 @@
     </section>
 
     <section id="panel-system" class="panel" role="tabpanel" aria-labelledby="tab-system" hidden>
+      <div class="card">
+        <h2>Laiteasetukset</h2>
+        <div class="toggle-row">
+          <label class="toggle-label">
+            <input type="checkbox" id="chkMuteSwitch">
+            <span>Vaimennuskytkin käytössä</span>
+          </label>
+          <p class="muted small">Kun käytössä: vaimennus ohjataan fyysisellä kytkimellä. Kun pois: vaimennus ohjataan tältä sivulta – tila nollautuu laitteen käynnistyksen yhteydessä.</p>
+        </div>
+      </div>
       <div class="card">
         <h2>Web-kirjautuminen</h2>
         <p class="muted small">Käyttäjätunnus on aina <strong>admin</strong>. Oletussalasana <strong>streamPi</strong> – vaihda heti omaan.</p>

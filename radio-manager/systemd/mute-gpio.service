@@ -1,0 +1,16 @@
+[Unit]
+Description=StreamPi vaimennuskytkin (AUX hiljennys, GPIO 22)
+After=sound.target
+# Only running when mute control mode is SWITCH; started/stopped by Radio Manager
+
+[Service]
+Type=simple
+User=__RUN_AS_USER__
+WorkingDirectory=/tmp
+Environment=ALSA_CARD=__ALSA_CARD__
+ExecStart=/usr/bin/python3 __INSTALL_DIR__/scripts/aux_mute_gpio.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -109,11 +109,17 @@ function start() {
   });
 }
 
-// Apply saved streaming mode on startup (e.g. after reboot)
+// Apply saved streaming and mute mode on startup (e.g. after reboot)
 try {
   streamingMode.applyCurrentMode();
 } catch (e) {
   logger.warn('Could not apply streaming mode on startup', { error: e.message });
+}
+try {
+  const muteControl = require('./mute-control');
+  muteControl.applyOnStartup();
+} catch (e) {
+  logger.warn('Could not apply mute mode on startup', { error: e.message });
 }
 
 // Restore ALSA state on startup so saved mixer settings persist across reboots
