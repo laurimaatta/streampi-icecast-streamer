@@ -21,9 +21,11 @@ Asennus on suunniteltu toimimaan kerralla juuri asennetulla Pi Zero 2W:lla.
 
 ## 2. Nopea asennus (rutiini)
 
+*Huom:* `asenna-pi.sh` toimii vain Linuxissa. Windows-käyttäjille ja sellaisille, joilla ei ole Linux-konetta, suositellaan **Vaihtoehtoa 3 (Windows)** tai **Vaihtoehtoa 4 (asennus suoraan Pi:llä)**.
+
 ### Vaihe A: Kopioi ja asenna
 
-**Vaihtoehto 1 – yksi komento (paikalliselta koneelta):**
+**Vaihtoehto 1 – yksi komento (paikalliselta Linux-koneelta):**
 
 ```bash
 ./scripts/asenna-pi.sh käyttäjä@<Pi-IP>
@@ -33,7 +35,7 @@ Esim. `./scripts/asenna-pi.sh pi@10.118.235.92` tai `./scripts/asenna-pi.sh pi@r
 
 Skripti kopioi ohjelman Pi:lle ja ajaa koko asennuksen etänä (apt, install.sh, WiFi-hotspot, käynnistys).
 
-**Vaihtoehto 2 – vain kopioi, asenna sitten Pi:llä käsin:**
+**Vaihtoehto 2 – vain kopioi, asenna sitten Pi:llä käsin (Linux):**
 
 ```bash
 # Paikalliselta koneelta (ei aja asennusta):
@@ -42,6 +44,36 @@ Skripti kopioi ohjelman Pi:lle ja ajaa koko asennuksen etänä (apt, install.sh,
 # Pi:llä:
 cd ~/radio-manager && chmod +x scripts/setup-pi.sh && ./scripts/setup-pi.sh
 ```
+
+**Vaihtoehto 3 – Windows-käyttäjä:**
+
+`asenna-pi.sh` on bash-skripti ja toimii vain Linuxissa. Windowsilla voit käyttää näitä tapoja:
+
+1. **PowerShell + OpenSSH (Windows 10/11):** Jos OpenSSH-asiakas on asennettuna (Asetukset → Sovellukset → Valinnaiset ominaisuudet → OpenSSH Client), kopioi ensin repo Pi:lle esim. ZIPinä tai toisella tavalla, sitten kirjaudu Pi:lle SSH:lla ja seuraa **Vaihtoehtoa 4** (asennus suoraan Pi:llä). Tai kopioi scp:llä: `scp -r radio-manager wifi-provisioning pi@<Pi-IP>:~/`
+
+2. **WSL (Windows Subsystem for Linux):** Asenna WSL, avaa Linux-terminaali ja käytä ohjeita kuin Linuxissa (Vaihtoehto 1 tai 2).
+
+3. **Suositus:** Käytä **Vaihtoehtoa 4** – kloonaa repo suoraan Pi:llä ja asenna siellä. Ei tarvitse mitään kehitysympäristöä omalla koneella.
+
+**Vaihtoehto 4 – Asennus suoraan Pi:llä (ei tarvitse omaa Linux-konetta):**
+
+Jos sinulla on vain Windows-tietokone tai et halua asentaa työkaluja, voit tehdä koko asennuksen Pi:llä. Tarvitset: Pi verkossa, sekä joko SSH-yhteyden tai näppäimistön ja näytön Pi:hin.
+
+```bash
+# Kirjaudu Pi:lle SSH:lla (tai käytä suoraan Pi:n konsolia)
+ssh pi@raspberrypi.local   # tai pi@<Pi-IP>
+
+# Kloonaa repo, kopioi kansiot ja aja asennus
+sudo apt-get update && sudo apt-get install -y git
+git clone https://github.com/laurimaatta/streampi-icecast-streamer.git ~/streampi-install
+cp -r ~/streampi-install/radio-manager ~/streampi-install/wifi-provisioning ~/
+cd ~/radio-manager && chmod +x scripts/setup-pi.sh && ./scripts/setup-pi.sh
+
+# Asennuksen jälkeen voit poistaa kloonatun repon (ohjelma on jo ~/radio-managerissa)
+rm -rf ~/streampi-install ~/wifi-provisioning
+```
+
+Asennusohjelma jää kansioon `~/radio-manager` ja toimii normaalisti. Seuraa kohdan 2B ohjeita (avaa käyttöliittymä, täytä asetukset).
 
 ### Vaihe B: Avaa käyttöliittymä ja täytä asetukset
 

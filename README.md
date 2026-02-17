@@ -25,7 +25,9 @@ Internet-radiolähetyksen web-ohjaus Raspberry Pi Zero 2 W -laitteelle (IQAudio 
 ## Nopea käynnistys
 
 1. Asenna Raspbian ja aseta ensimmäinen WiFi SD-kortille (tai lisää myöhemmin AP-tilassa).
-2. **Paikalliselta koneelta:** `./scripts/asenna-pi.sh käyttäjä@<Pi-IP>` – kopioi ja asenna kerralla (vain kopio: `--copy-only`).
+2. Asennus (valitse oma tapa):
+   - **Linux:** `./scripts/asenna-pi.sh käyttäjä@<Pi-IP>` – kopioi ja asenna kerralla (vain kopio: `--copy-only`).
+   - **Windows tai ilman Linux-konetta:** Suoraan Pi:llä: `git clone` repon, kopioi kansiot ja aja `./scripts/setup-pi.sh` (ohjeet: [docs/ASENNUS.md](docs/ASENNUS.md)).
 
 Konfigurointi (`.env`) ja käyttö: **[docs/ASENNUS.md](docs/ASENNUS.md)**.
 
