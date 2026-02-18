@@ -35,7 +35,7 @@ Kytkin-tilassa lähetys käynnistyy ja pysähtyy fyysisellä kytkimellä. Kytkin
                     (GPIO17 = lähetyskytkin, GPIO22 = vaimennus, jos käytössä)
 ```
 
-**Lähetyskytkin:** Toinen johdoista GPIO17 (pin 11) ja toinen GND (pin 9). Kytkin suljettaessa oikosulku näiden välillä. Älä käytä virtalähdettä – vain GPIO ja GND.
+**Lähetyskytkin (valinnainen):** Toinen johdoista GPIO17 (pin 11) ja toinen GND (pin 9). Kytkin suljettu = lähetys päällä, auki = pois. Järjestelmä-välilehden Laiteasetuksista valitaan "Lähetyskytkin käytössä".
 
 **Vaimennuskytkin (valinnainen):** Toinen johdoista GPIO22 (pin 15) ja toinen GND (pin 9 tai 14). Kytkin suljettu = linja-sisääntulo hiljennetty, kytkin auki = ääni menee lähetykseen. Järjestelmä-välilehden Laiteasetuksista valitaan "Vaimennuskytkin käytössä". Älä käytä GPIO23 (pin 16) – se on varattu IQaudIO Codec Zero -kortin vihreälle LED D2:lle.
 

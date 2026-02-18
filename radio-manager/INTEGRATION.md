@@ -6,13 +6,14 @@
 - **Service**: The install script installs `darkice.service` (the Debian darkice package does not ship one). Radio Manager starts/stops/restarts it via `systemctl`. The unit runs `darkice -c /etc/darkice.cfg` as the same user as radio-manager.
 - The install script also adds `radio-manager.service` and `darkice-gpio.service`.
 
-## GPIO (kytkin)
+## GPIO (lähetyskytkin)
 
 - **Script**: `scripts/darkice_gpio.py` uses **RPi.GPIO** with a **switch (kytkin)** on GPIO 17. Polling loop: checks switch state every second. Switch closed (LOW, to GND) = stream ON, switch open (HIGH) = stream OFF. Lähetys on päällä niin kauan kuin kytkin on on-asennossa. Matches original `darkice_manager.py` behaviour.
+- **Ohjaus:** Järjestelmä-välilehden Laiteasetuksista valitaan "Lähetyskytkin käytössä". Jos käytössä: fyysinen kytkin ohjaa lähetystä; web-nappi ei käynnistä/lopeta vaan näyttää tilan. Jos pois: Lähetys-välilehden Käynnistä/Lopeta ohjaa. Käynnistä uudelleen on aina käytettävissä käyttöliittymästä.
 - **Behaviour**:
   - **SWITCH (Kytkin)**: Radio Manager starts `darkice-gpio.service`, which runs `darkice_gpio.py`. The switch controls DarkIce (on = stream on, off = stream off).
   - **WEBUI**: Radio Manager stops `darkice-gpio.service`. The web UI controls the stream via Käynnistä/Lopeta button.
-- **Pin**: GPIO 17 (BCM). Pull-up: switch closed (to GND) = stream on, open = stream off. To change pin, edit `scripts/darkice_gpio.py` (BUTTON_PIN) and restart `darkice-gpio.service` when in SWITCH mode.
+- **Pin**: GPIO 17 (BCM, pin 11). Pull-up: switch closed (to GND) = stream on, open = stream off. To change pin, edit `scripts/darkice_gpio.py` (BUTTON_PIN) and restart `darkice-gpio.service` when in SWITCH mode.
 
 ## Mute (vaimennus)
 

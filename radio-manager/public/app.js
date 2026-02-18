@@ -211,29 +211,31 @@
     const data = await fetchJson('/api/streaming/status');
     setStreamStatus(data);
     const mode = data.mode || 'SWITCH';
-    const uiMode = (mode === 'ON' || mode === 'OFF') ? 'WEBUI' : mode;
-    document.querySelectorAll('input[name="mode"]').forEach((el) => {
-      el.checked = el.value === uiMode;
-    });
-    const btnToggleStream = document.getElementById('btnToggleStream');
-    const btnRestart = document.getElementById('btnRestart');
-    const streamSwitchHint = document.getElementById('streamSwitchHint');
-    if (mode === 'SWITCH') {
-      if (btnToggleStream) {
-        btnToggleStream.disabled = true;
-        btnToggleStream.textContent = 'Käynnistä';
-      }
-      if (streamSwitchHint) streamSwitchHint.style.display = 'block';
+    const useSwitch = (mode === 'ON' || mode === 'OFF') ? false : mode === 'SWITCH';
+
+    const noSwitchPanel = document.getElementById('streamNoSwitchPanel');
+    const switchPanel = document.getElementById('streamSwitchPanel');
+    if (noSwitchPanel) noSwitchPanel.hidden = useSwitch;
+    if (switchPanel) switchPanel.hidden = !useSwitch;
+
+    if (!useSwitch) {
+      const btnToggleStream = document.getElementById('btnToggleStream');
+      const btnRestart = document.getElementById('btnRestart');
+      if (btnToggleStream) btnToggleStream.textContent = data.active ? 'Lopeta' : 'Käynnistä';
+      if (btnRestart) btnRestart.style.display = data.active ? 'inline-block' : 'none';
     } else {
-      if (btnToggleStream) {
-        btnToggleStream.disabled = false;
-        btnToggleStream.textContent = data.active ? 'Lopeta' : 'Käynnistä';
+      const lbl = document.getElementById('streamStateLabelSwitch');
+      const btnRestartWhenSwitch = document.getElementById('btnRestartWhenSwitch');
+      if (lbl) {
+        lbl.textContent = data.active ? 'Lähetys päällä – kytkin' : 'Pysäytetty – kytkin';
+        lbl.className = 'mute-state-label' + (data.active ? '' : '');
       }
-      if (streamSwitchHint) streamSwitchHint.style.display = 'none';
+      if (btnRestartWhenSwitch) btnRestartWhenSwitch.style.display = data.active ? 'inline-block' : 'none';
     }
-    if (btnRestart) {
-      btnRestart.style.display = data.active ? 'inline-block' : 'none';
-    }
+
+    const chkStream = document.getElementById('chkStreamSwitch');
+    if (chkStream && chkStream !== document.activeElement) chkStream.checked = useSwitch;
+
     return data;
   }
 
@@ -361,17 +363,17 @@
     }
   });
 
-  document.querySelectorAll('input[name="mode"]').forEach((el) => {
-    el.addEventListener('change', async () => {
-      try {
-        const mode = el.value;
-        await fetchJson('/api/streaming/mode', { method: 'PUT', body: JSON.stringify({ mode }) });
-        showToast(T.toastMode + (mode === 'SWITCH' ? 'Kytkin' : 'Tämä sivu'));
-        loadStreamingStatus();
-      } catch (err) {
-        showToast(T.error + err.message);
-      }
-    });
+  document.getElementById('chkStreamSwitch')?.addEventListener('change', async (e) => {
+    try {
+      const useSwitch = e.target.checked;
+      const mode = useSwitch ? 'SWITCH' : 'WEBUI';
+      await fetchJson('/api/streaming/mode', { method: 'PUT', body: JSON.stringify({ mode }) });
+      showToast(useSwitch ? 'Lähetyskytkin käytössä' : 'Lähetyskytkin pois');
+      loadStreamingStatus();
+    } catch (err) {
+      e.target.checked = !e.target.checked;
+      showToast(T.error + err.message);
+    }
   });
 
   document.getElementById('btnToggleStream').addEventListener('click', async () => {
@@ -390,15 +392,14 @@
       showToast(T.error + err.message);
     }
   });
-  document.getElementById('btnRestart').addEventListener('click', async () => {
-    try {
-      await fetchJson('/api/streaming/restart', { method: 'POST' });
+  function onRestartStream() {
+    return fetchJson('/api/streaming/restart', { method: 'POST' }).then(() => {
       showToast(T.toastStreamRestart);
       loadStreamingStatus();
-    } catch (err) {
-      showToast(T.error + err.message);
-    }
-  });
+    }).catch((err) => showToast(T.error + err.message));
+  }
+  document.getElementById('btnRestart').addEventListener('click', onRestartStream);
+  document.getElementById('btnRestartWhenSwitch')?.addEventListener('click', onRestartStream);
 
   const ALSA_CONTROL_HINTS = {
     'Mic 1': 'Mikrofonikanavan 1 voimakkuus. Suurempi arvo = kovempi mikrofoniääni. Pienempi = hiljaisempi.',

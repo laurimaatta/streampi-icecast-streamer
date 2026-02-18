@@ -1,0 +1,30 @@
+---
+description: Käyttöliittymän kieli ja termit – selkeä suomi, ei tekniikkaa
+globs: radio-manager/public/**/*
+alwaysApply: false
+---
+
+# Käyttöliittymän kieli
+
+Käyttöliittymässä (HTML, näkyvät tekstit, placeholderit, toast-viestit) käytetään **selkeitä suomen kielisiä termejä**. Vältetään turhaa teknistä jargonia.
+
+## Älä käytä käyttäjälle näkyvissä
+
+- **GPIO**, pinninumeroita (pin 11, pin 15), BCM, GND, vastaavia laitekytkentätermejä
+- Ylimääräisiä palvelin-/ohjelmistotermejä (esim. API, endpoint), ellei konteksti vaadi
+
+## Käytä sen sijaan
+
+- **Fyysinen kytkin** (ei "GPIO-kytkin")
+- **Lähetyskytkin**, **vaimennuskytkin** – toiminnon mukaan
+- Selkeät ohjeet ilman pinniviittauksia (kytkentäohjeet kuuluvat dokumentaatioon, esim. docs/KYTKENTA.md)
+
+## Esimerkkejä
+
+- ❌ "Kytkin kytketään GPIO 17, pin 11 → GND"
+- ✅ "Lähetys ohjataan kytkimellä."
+
+- ❌ "Vaimennus GPIO 22:lla"
+- ✅ "Vaimennus ohjataan kytkimellä."
+
+Tekninen dokumentaatio (README, INTEGRATION.md, asennusohjeet) voi edelleen mainita pinnit ja GPIO:n.

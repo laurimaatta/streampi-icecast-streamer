@@ -51,19 +51,22 @@
     <section id="panel-streaming" class="panel active" role="tabpanel" aria-labelledby="tab-streaming">
       <div class="card">
         <h2>Lähetyksen ohjaus</h2>
-        <div class="stream-control">
-          <div class="mode-group">
-            <label>Ohjaus</label>
-            <div class="radio-group">
-              <label><input type="radio" name="mode" value="SWITCH"> Kytkin</label>
-              <label><input type="radio" name="mode" value="WEBUI"> Tämä sivu</label>
-            </div>
-          </div>
+
+        <!-- Ei kytkintä: Käynnistä / Lopeta -nappi -->
+        <div id="streamNoSwitchPanel">
           <div class="btn-group">
             <button type="button" id="btnToggleStream">Käynnistä</button>
             <button type="button" id="btnRestart" style="display:none;">Käynnistä uudelleen</button>
           </div>
-          <p id="streamSwitchHint" class="muted small" style="display:none;">Lähetys käynnistyy ja pysähtyy fyysisellä kytkimellä.</p>
+        </div>
+
+        <!-- Kytkin käytössä: pelkkä tila -->
+        <div id="streamSwitchPanel" hidden>
+          <p id="streamStateLabelSwitch" class="mute-state-label" aria-live="polite">Pysäytetty – kytkin</p>
+          <p class="muted small">Tila ohjataan kytkimellä.</p>
+          <div class="btn-group" style="margin-top:0.75rem;">
+            <button type="button" id="btnRestartWhenSwitch" style="display:none;">Käynnistä uudelleen</button>
+          </div>
         </div>
       </div>
       <div class="card">
@@ -80,7 +83,7 @@
         <!-- Kytkin käytössä: pelkkä tila -->
         <div id="muteSwitchPanel" hidden>
           <p id="muteStateLabelSwitch" class="mute-state-label" aria-live="polite">Ääni päällä – kytkin</p>
-          <p class="muted small">Tila ohjataan fyysisellä kytkimellä.</p>
+          <p class="muted small">Tila ohjataan kytkimellä.</p>
         </div>
       </div>
       <div class="card">
@@ -144,10 +147,17 @@
         <h2>Laiteasetukset</h2>
         <div class="toggle-row">
           <label class="toggle-label">
+            <input type="checkbox" id="chkStreamSwitch">
+            <span>Lähetyskytkin käytössä</span>
+          </label>
+          <p class="muted small">Kun käytössä: lähetys ohjataan vain kytkimellä. Kun pois: lähetys ohjataan Lähetys-välilehden napilla. Uudelleenkäynnistys onnistuu käyttöliittymästä molemmissa tiloissa.</p>
+        </div>
+        <div class="toggle-row" style="margin-top:1rem;">
+          <label class="toggle-label">
             <input type="checkbox" id="chkMuteSwitch">
             <span>Vaimennuskytkin käytössä</span>
           </label>
-          <p class="muted small">Kun käytössä: vaimennus ohjataan fyysisellä kytkimellä. Kun pois: vaimennus ohjataan tältä sivulta – tila nollautuu laitteen käynnistyksen yhteydessä.</p>
+          <p class="muted small">Kun käytössä: vaimennus ohjataan kytkimellä. Kun pois: vaimennus ohjataan Lähetys-välilehden napilla – tila nollautuu käynnistyksen yhteydessä.</p>
         </div>
       </div>
       <div class="card">
