@@ -259,18 +259,31 @@ router.get('/api/backup/export', (req, res) => {
   }
 });
 
-router.post('/api/backup/import', (req, res) => {
-  const payload = req.body;
-  if (!payload || typeof payload !== 'object') {
-    return res.status(400).json({ error: 'Invalid JSON backup' });
-  }
-  const result = backup.restoreFromPayload(payload);
-  if (result.ok) {
-    streamingMode.applyCurrentMode();
-    muteControl.applyMuteMode();
-    res.json({ ok: true });
-  } else {
-    res.status(400).json({ ok: false, errors: result.errors });
+/** True if restore only had non-fatal errors (e.g. ALSA failed but darkice/app ok). */
+function isPartialRestoreSuccess(result) {
+  if (result.ok || !result.errors || result.errors.length === 0) return false;
+  return result.errors.every((e) => e.step === 'alsa');
+}
+
+router.post('/api/backup/import', async (req, res) => {
+  try {
+    const payload = req.body;
+    if (!payload || typeof payload !== 'object') {
+      return res.status(400).json({ error: 'Invalid JSON backup' });
+    }
+    const result = backup.restoreFromPayload(payload);
+    if (result.ok || isPartialRestoreSuccess(result)) {
+      streamingMode.applyCurrentMode();
+      await muteControl.applyMuteSwitch(appConfig.getHasMuteSwitch());
+      return res.json(result.ok ? { ok: true } : { ok: true, warnings: result.errors });
+    }
+    return res.status(400).json({
+      error: result.errors?.map((e) => e.error).join(' ') || 'Restore failed',
+      errors: result.errors,
+    });
+  } catch (e) {
+    logger.error('Backup import failed', { error: e.message });
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -292,19 +305,26 @@ router.post('/api/backup/save', (req, res) => {
   }
 });
 
-router.post('/api/backup/restore', (req, res) => {
-  const { path: filePath, name: backupName } = req.body || {};
-  const pathToUse = filePath || (backupName ? path.join(backup.BACKUP_DIR, backupName) : null);
-  if (!pathToUse || typeof pathToUse !== 'string') {
-    return res.status(400).json({ error: 'Missing path or name' });
-  }
-  const result = backup.restoreFromLocalFile(pathToUse);
-  if (result.ok) {
-    streamingMode.applyCurrentMode();
-    muteControl.applyMuteMode();
-    res.json({ ok: true });
-  } else {
-    res.status(400).json({ error: result.error });
+router.post('/api/backup/restore', async (req, res) => {
+  try {
+    const { path: filePath, name: backupName } = req.body || {};
+    const pathToUse = filePath || (backupName ? path.join(backup.BACKUP_DIR, backupName) : null);
+    if (!pathToUse || typeof pathToUse !== 'string') {
+      return res.status(400).json({ error: 'Missing path or name' });
+    }
+    const result = backup.restoreFromLocalFile(pathToUse);
+    if (result.ok || isPartialRestoreSuccess(result)) {
+      streamingMode.applyCurrentMode();
+      await muteControl.applyMuteSwitch(appConfig.getHasMuteSwitch());
+      return res.json(result.ok ? { ok: true } : { ok: true, warnings: result.errors });
+    }
+    const errMsg = result.errors?.length
+      ? result.errors.map((e) => e.error).join(' ')
+      : (result.error || 'Restore failed');
+    return res.status(400).json({ error: errMsg, errors: result.errors });
+  } catch (e) {
+    logger.error('Backup restore failed', { error: e.message });
+    res.status(500).json({ error: e.message });
   }
 });
 

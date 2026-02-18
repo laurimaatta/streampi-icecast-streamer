@@ -33,6 +33,7 @@
     toastBackupImported: 'Varmuuskopio tuotu.',
     toastBackupLocal: 'Varmuuskopio luotu.',
     toastRestored: 'Palautettu.',
+    toastRestoreAlsaWarning: 'Äänitilan palautus ei onnistunut (asetukset ja lähetys palautettu).',
     error: 'Virhe: ',
     loadError: 'Latausvirhe: ',
     noBackups: 'Ei paikallisia varmuuskopioita',
@@ -576,8 +577,9 @@
     try {
       const text = await file.text();
       JSON.parse(text);
-      await fetchJson('/api/backup/import', { method: 'POST', body: text });
+      const data = await fetchJson('/api/backup/import', { method: 'POST', body: text });
       showToast(T.toastBackupImported);
+      if (data.warnings && data.warnings.length) showToast(T.toastRestoreAlsaWarning);
       loadDarkice();
       loadStreamingStatus();
     } catch (err) {
@@ -613,8 +615,9 @@
     const name = restoreSelect.value;
     if (!name) return;
     try {
-      await fetchJson('/api/backup/restore', { method: 'POST', body: JSON.stringify({ name }) });
+      const data = await fetchJson('/api/backup/restore', { method: 'POST', body: JSON.stringify({ name }) });
       showToast(T.toastRestored);
+      if (data.warnings && data.warnings.length) showToast(T.toastRestoreAlsaWarning);
       loadDarkice();
       loadStreamingStatus();
     } catch (err) {
