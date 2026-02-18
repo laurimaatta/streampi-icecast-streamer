@@ -322,8 +322,108 @@
     if (id === 'system') {
       loadLocalBackups();
       loadAuthConfig();
+      loadCertInfo();
     }
   }
+
+  function getCertDownloadStatus() {
+    return document.getElementById('certDownloadStatus');
+  }
+
+  function looksLikeIp(s) {
+    return s && /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(String(s).trim());
+  }
+
+  async function loadCertInfo() {
+    const el = document.getElementById('certInfoText');
+    const hintEl = document.getElementById('certInfoHint');
+    const btnExisting = document.getElementById('btnDownloadCaExisting');
+    if (!el) return;
+    if (hintEl) hintEl.style.display = 'none';
+    try {
+      const info = await fetchJson('/api/certs/info');
+      if (!info.hasCert) {
+        el.textContent = 'Varmenteetta ei ole. Luo uusi varmenne ja lataa.';
+        if (btnExisting) btnExisting.disabled = true;
+        return;
+      }
+      const parts = [];
+      if (info.hostname) parts.push('isäntänimi ' + info.hostname);
+      if (info.ips && info.ips.length) {
+        const skipLocal = info.ips.filter((ip) => ip !== '127.0.0.1');
+        if (skipLocal.length) parts.push('osoitteet ' + skipLocal.join(', '));
+      }
+      if (info.hostnames && info.hostnames.length) {
+        const dns = info.hostnames.filter((h) => h !== 'localhost' && h !== info.hostname);
+        if (dns.length) parts.push('nimet ' + dns.join(', '));
+      }
+      el.textContent = parts.length ? 'Nykyinen varmenne: ' + parts.join(', ') + '.' : 'Nykyinen varmenne olemassa.';
+      if (btnExisting) btnExisting.disabled = false;
+      if (hintEl && looksLikeIp(info.hostname)) {
+        hintEl.textContent = 'Varmenne on luotu vain IP:lle. Jotta nimi (esim. raspberrypi.local) toimii: aseta laitteelle isäntänimi (esim. ssh:lla sudo hostnamectl set-hostname raspberrypi) ja paina sitten "Luo uusi varmenne ja lataa".';
+        hintEl.style.display = 'block';
+      }
+    } catch (_) {
+      el.textContent = '';
+      if (btnExisting) btnExisting.disabled = true;
+    }
+  }
+
+  function triggerDownload(blob, filename) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  document.getElementById('btnDownloadCaExisting')?.addEventListener('click', async () => {
+    const statusEl = getCertDownloadStatus();
+    if (statusEl) { statusEl.style.display = 'inline'; statusEl.textContent = 'Ladataan…'; }
+    try {
+      const r = await fetch(API + '/api/certs/ca', { credentials: 'include' });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({ error: r.statusText }));
+        throw new Error(err.error || r.statusText);
+      }
+      const blob = await r.blob();
+      triggerDownload(blob, 'StreamPi-varmenne.pem');
+      if (statusEl) statusEl.textContent = 'Ladattu. Asenna varmenne selaimeen.';
+      showToast('Varmenne ladattu. Asenna se selaimeen.');
+    } catch (err) {
+      showToast(T.error + (err.message || 'Lataus epäonnistui'));
+      if (statusEl) statusEl.textContent = '';
+    }
+  });
+
+  document.getElementById('btnDownloadCaRegenerate')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btnDownloadCaRegenerate');
+    const statusEl = getCertDownloadStatus();
+    const confirmMsg = "Luo uusi varmenne? Aiemmat varmenteet mitätöityvät (muilla koneilla täytyy asentaa uusi).\n\nAsenna ladattu varmenne selaimeen.";
+    if (!confirm(confirmMsg)) return;
+    if (btn) btn.disabled = true;
+    if (statusEl) { statusEl.style.display = 'inline'; statusEl.textContent = 'Luodaan varmennetta…'; }
+    try {
+      const r = await fetch(API + '/api/certs/download-ca', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({ error: r.statusText }));
+        throw new Error(err.error || r.statusText);
+      }
+      const blob = await r.blob();
+      triggerDownload(blob, 'StreamPi-varmenne.pem');
+      if (statusEl) statusEl.textContent = 'Varmenne ladattu. Asenna varmenne selaimeen.';
+      showToast('Varmenne ladattu. Asenna se selaimeen.');
+      loadCertInfo();
+    } catch (err) {
+      showToast(T.error + (err.message || 'Lataus epäonnistui'));
+      if (statusEl) statusEl.textContent = '';
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
 
   async function loadAuthConfig() {
     try {
@@ -693,9 +793,16 @@
       showToast(T.error + (err.message || (err.error || 'Syötä nykyinen salasana.')));
     }
   });
+  let pollFailCount = 0;
+  const POLL_CERT_HINT_AFTER = 2;
   setInterval(() => {
-    loadStreamingStatus();
-    loadMuteStatus();
+    loadStreamingStatus().catch(() => {
+      pollFailCount += 1;
+      if (pollFailCount === POLL_CERT_HINT_AFTER) {
+        showToast('Yhteys ei luotettu. Jos juuri asensit varmenteen: käynnistä selain uudelleen.');
+      }
+    });
+    loadMuteStatus().catch(() => {});
   }, 5000);
 
   async function init() {

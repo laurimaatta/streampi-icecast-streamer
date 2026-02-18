@@ -59,23 +59,16 @@ cd "$INSTALL_DIR"
 npm install --omit=optional 2>/dev/null || true
 npm install 2>/dev/null || true
 
-# Certificates (use hostname and IP from install.conf / env)
-export CERT_HOSTNAME="${CERT_HOSTNAME:-$(hostname 2>/dev/null || echo 'raspberrypizero.local')}"
-export CERT_IP="${CERT_IP:-}"
-GEN_CERT="y"
-if [ -f "$CERTS_DIR/server.pem" ]; then
-  read -p "HTTPS certificate already exists. Regenerate? (y/n) [n]: " GEN_CERT
-  GEN_CERT="${GEN_CERT:-n}"
-fi
-if [ "$GEN_CERT" = "y" ]; then
-  echo "Generating HTTPS certificate (hostname=$CERT_HOSTNAME)..."
+# Certificates: create once if missing (user can regenerate and download from Järjestelmä tab)
+# Include hostname.local and primary IP so both https://hostname.local and https://IP work
+if [ ! -f "$CERTS_DIR/server.pem" ]; then
+  HOST_SHORT="$(hostname -s 2>/dev/null || hostname 2>/dev/null || echo 'raspberrypi')"
+  export CERT_HOSTNAME="${CERT_HOSTNAME:-${HOST_SHORT%.local}.local}"
+  export CERT_IP="${CERT_IP:-$(hostname -I 2>/dev/null | awk '{print $1}')}"
+  echo "Creating initial HTTPS certificate (hostname=$CERT_HOSTNAME, IP=$CERT_IP)..."
   RADIO_MANAGER_DATA="$DATA_DIR" node scripts/generate-certs.js "$CERTS_DIR"
   chmod 600 "$CERTS_DIR/server.key" 2>/dev/null || true
-else
-  echo "Using existing certificates in $CERTS_DIR"
 fi
-read -p "Show instructions for installing the CA certificate in your browser (to remove security warning)? (y/n) [y]: " SHOW_CA_INSTRUCTIONS
-SHOW_CA_INSTRUCTIONS="${SHOW_CA_INSTRUCTIONS:-y}"
 
 # App config: web login always admin / streamPi (change password in UI)
 APP_CONFIG_FILE="$DATA_DIR/app-config.json"
@@ -171,11 +164,15 @@ if [ -f "$BOOT_CONF" ] && grep -q '^dtparam=audio=on' "$BOOT_CONF" 2>/dev/null; 
   sudo sed -i 's/^dtparam=audio=on/dtparam=audio=off/' "$BOOT_CONF"
 fi
 
-# Sudoers: allow RUN_AS_USER to run systemctl, write darkice.cfg, and alsactl
+# Sudoers: allow RUN_AS_USER to run systemctl, write darkice.cfg, alsactl, restart radio-manager, reload nginx certs
 SUDOERS_FILE="/etc/sudoers.d/radio-manager"
 sudo tee "$SUDOERS_FILE" << EOF
 # StreamPi: allow controlling DarkIce and GPIO service, writing config, ALSA state
 $RUN_AS_USER ALL=(ALL) NOPASSWD: /bin/systemctl start darkice.service, /bin/systemctl stop darkice.service, /bin/systemctl restart darkice.service, /bin/systemctl start darkice-gpio.service, /bin/systemctl stop darkice-gpio.service, /bin/systemctl start mute-gpio.service, /bin/systemctl stop mute-gpio.service, /bin/systemctl status darkice.service, /bin/systemctl status darkice-gpio.service, /bin/systemctl status mute-gpio.service
+$RUN_AS_USER ALL=(ALL) NOPASSWD: /bin/systemctl restart radio-manager.service
+$RUN_AS_USER ALL=(ALL) NOPASSWD: /bin/systemctl reload nginx
+$RUN_AS_USER ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p /etc/nginx/ssl
+$RUN_AS_USER ALL=(ALL) NOPASSWD: /bin/cp $DATA_DIR/certs/server.pem $DATA_DIR/certs/server.key /etc/nginx/ssl/
 $RUN_AS_USER ALL=(ALL) NOPASSWD: /usr/bin/alsactl *
 $RUN_AS_USER ALL=(ALL) NOPASSWD: /usr/sbin/alsactl *
 # Allow writing /etc/darkice.cfg via tee (stdin from StreamPi; allow both common paths)
@@ -184,6 +181,19 @@ $RUN_AS_USER ALL=(ALL) NOPASSWD: /bin/tee /etc/darkice.cfg
 EOF
 sudo chmod 440 "$SUDOERS_FILE"
 echo "Sudoers rule installed: $SUDOERS_FILE"
+
+# Script for radio-manager to copy renewed certs to nginx and reload (used after UI "download CA")
+RELOAD_CERTS_SCRIPT="/usr/local/bin/streampi-reload-nginx-certs"
+sudo tee "$RELOAD_CERTS_SCRIPT" << RELOADEOF
+#!/bin/sh
+# StreamPi: copy certs to nginx and reload (called after certificate regeneration)
+DATA_DIR="$DATA_DIR"
+cp "\$DATA_DIR/certs/server.pem" "\$DATA_DIR/certs/server.key" /etc/nginx/ssl/ 2>/dev/null && systemctl reload nginx 2>/dev/null || true
+RELOADEOF
+sudo chmod 755 "$RELOAD_CERTS_SCRIPT"
+echo "Nginx cert reload script: $RELOAD_CERTS_SCRIPT"
+# Allow RUN_AS_USER to run it without password
+echo "$RUN_AS_USER ALL=(ALL) NOPASSWD: $RELOAD_CERTS_SCRIPT" | sudo tee -a "$SUDOERS_FILE" > /dev/null
 
 # If install was run as different user (e.g. root or deploy), ensure run-as user owns install dir
 CURRENT_USER="${SUDO_USER:-$USER}"
@@ -256,31 +266,6 @@ echo ""
 echo "Installation complete (StreamPi runs as user: $RUN_AS_USER)."
 echo "  Start: sudo systemctl start radio-manager"
 echo "  Logs:  journalctl -u radio-manager -f"
-echo "  URL:   https://$CERT_HOSTNAME:8443 or https://<IP>:8443 (with nginx: https://<IP> or http://<IP>)"
+echo "  URL:   https://<Pi-IP>:8443 (with nginx: https://<Pi-IP> or http://<Pi-IP>)"
+echo "  Varmenne: Järjestelmä-välilehdeltä voit ladata varmenteen asennettavaksi selaimessa."
 echo "  To reconfigure: ./scripts/configure.sh then ./scripts/install.sh"
-if [ "$SHOW_CA_INSTRUCTIONS" = "y" ]; then
-  echo ""
-  echo "================================================================================"
-  echo "  HTTPS CA-SERTIFIKAATIN ASENNUS (selain lopettaa varoituksen)"
-  echo "================================================================================"
-  echo ""
-  echo "1. Kopioi CA-tiedosto Pi:ltä omalle koneellesi:"
-  echo "   scp $RUN_AS_USER@<Pi-IP>:$CERTS_DIR/ca/ca.pem ./ca.pem"
-  echo ""
-  echo "2. Asenna ca.pem luotettavana juurivarmenteen myöntäjänä:"
-  echo ""
-  echo "   Chrome:  Asetukset → Tietosuoja ja turvallisuus → Turvallisuus →"
-  echo "            Sertifikaatit → Valtuutetut juurivarmenteen myöntäjät → Tuo → valitse ca.pem"
-  echo ""
-  echo "   Firefox: Asetukset → Privacy & Security → Certificates → View Certificates →"
-  echo "            Authorities → Import → valitse ca.pem → rasti \"Trust this CA\""
-  echo ""
-  echo "   Windows: Kaksoisklikkaa ca.pem → Asenna sertifikaatti → Paikallinen tietokone →"
-  echo "            Sijoita kaikki sertifikaatit seuraavaan säilöön → Selaa →"
-  echo "            Valitse \"Luetut juurivarmenteen myöntäjät\" → Valmis"
-  echo ""
-  echo "3. Käynnistä selain uudelleen ja avaa https://<Pi-IP> tai https://<Pi-IP>:8443"
-  echo "   (käytä samaa osoitetta kuin sertifikaatissa: hostname tai IP)"
-  echo ""
-  echo "================================================================================"
-fi

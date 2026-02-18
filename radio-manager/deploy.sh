@@ -23,4 +23,4 @@ echo "Starting radio-manager service..."
 ssh "$PI_HOST" "sudo systemctl start radio-manager"
 
 echo ""
-echo "Done. Open https://raspberrypizero.local:8443 or https://\$(ssh $PI_HOST hostname -I | awk '{print \$1}'):8443"
+echo "Done. Open https://raspberrypi.local:8443 or https://\$(ssh $PI_HOST hostname -I | awk '{print \$1}'):8443"

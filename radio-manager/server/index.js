@@ -82,7 +82,7 @@ function getHttpsOptions() {
       cert: fs.readFileSync(certPath),
     };
   }
-  logger.warn('HTTPS certs not found; run certificate generation script', { certDir });
+  logger.warn('HTTPS certs not found; run scripts/generate-certs.js or install.sh', { certDir });
   return null;
 }
 

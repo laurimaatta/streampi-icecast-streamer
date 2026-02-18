@@ -161,6 +161,18 @@
         </div>
       </div>
       <div class="card">
+        <h2>HTTPS-varmenne</h2>
+        <p class="muted small">Lataa varmenne asennettavaksi selaimessa, jotta HTTPS-varoitus katoaa. Samaa varmennetta voi ladata usealle koneelle; uuden luominen mitätöi aiemmat.</p>
+        <p id="certInfoText" class="cert-info muted small" aria-live="polite"></p>
+        <p id="certInfoHint" class="cert-info-hint muted small" style="display:none;"></p>
+        <div class="cert-download-row">
+          <button type="button" id="btnDownloadCaExisting">Lataa nykyinen varmenne</button>
+          <button type="button" id="btnDownloadCaRegenerate">Luo uusi varmenne ja lataa</button>
+          <span id="certDownloadStatus" class="cert-download-status muted small" aria-live="polite" style="display:none;"></span>
+        </div>
+        <p id="certInstallHint" class="muted small">Asenna ladattu varmenne selaimeen.</p>
+      </div>
+      <div class="card">
         <h2>Web-kirjautuminen</h2>
         <p class="muted small">Käyttäjätunnus on aina <strong>admin</strong>. Oletussalasana <strong>streamPi</strong> – vaihda heti omaan.</p>
         <form id="formAuth" class="form-grid">
@@ -194,9 +206,6 @@
     </section>
   </main>
 
-  <div id="httpsHint" class="https-hint muted small">
-    Jos selain varoittaa yhteydestä, voit hyväksyä poikkeuksen ja jatkaa turvallisesti.
-  </div>
   <div id="toast" class="toast" aria-live="polite"></div>
   </div>
   <script src="app.js"></script>

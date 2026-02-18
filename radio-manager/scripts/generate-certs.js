@@ -16,7 +16,7 @@ const dataDir = process.env.RADIO_MANAGER_DATA || path.join(process.env.HOME || 
 const certDir = process.argv[2] || path.join(dataDir, 'certs');
 const caDir = path.join(certDir, 'ca');
 
-const HOSTNAME = process.env.CERT_HOSTNAME || 'raspberrypizero.local';
+const HOSTNAME = process.env.CERT_HOSTNAME || 'raspberrypi.local';
 const CERT_IP_RAW = process.env.CERT_IP || '';
 const CERT_IPS = CERT_IP_RAW ? CERT_IP_RAW.split(',').map((s) => s.trim()).filter(Boolean) : [];
 
@@ -39,6 +39,15 @@ function main() {
   const serverCsr = path.join(certDir, 'server.csr');
   const serverCert = path.join(certDir, 'server.pem');
   const extFile = path.join(certDir, 'server.ext');
+
+  const regenerateCa = process.env.REGENERATE_CA === '1' || process.env.REGENERATE_CA === 'true';
+  if (regenerateCa) {
+    [caKey, caCert, path.join(caDir, 'ca.srl')].forEach((p) => {
+      if (fs.existsSync(p)) {
+        fs.unlinkSync(p);
+      }
+    });
+  }
 
   if (!fs.existsSync(caKey)) {
     console.log('Creating local CA...');
@@ -68,11 +77,11 @@ subjectAltName=${san.join(',')}`;
   console.log('');
   console.log('Certificates written to:', certDir);
   console.log('  server.key, server.pem - used by StreamPi');
-  console.log('  ca/ca.pem - install this in your browser/OS to avoid security warnings');
+  console.log('  ca/ca.pem - install this in your browser to avoid security warnings');
   console.log('');
   console.log('To trust the site:');
   console.log('  1. Copy ca/ca.pem to your computer.');
-  console.log('  2. Install as trusted root CA (e.g. Chrome: Settings > Privacy > Security > Manage certificates > Authorities > Import).');
+  console.log('  2. Install the certificate in your browser.');
   console.log('  3. Access https://' + HOSTNAME + ':8443');
 }
 

@@ -1,6 +1,6 @@
 # Icecast Nettiradiopalvelin
 
-Tämä on Icecast-streaming-palvelin paikallista nettiradion testausta varten.
+Tämä on Icecast-streaming-palvelin paikallista lähetyksen testausta varten.
 
 ## Vaatimukset
 
@@ -121,7 +121,7 @@ Avaa `http://localhost:8000` ja klikkaa aktiivista mountpointia.
 
 ## Lähiverkkokäyttö
 
-Jos haluat testata nettiradioasi muilla laitteilla lähiverkossa:
+Jos haluat testata lähetystäsi muilla laitteilla lähiverkossa:
 
 ### 1. Avaa palomuurissa portti 8000
 

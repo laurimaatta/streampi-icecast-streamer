@@ -16,7 +16,7 @@ Internet-radiolähetyksen web-ohjaus Raspberry Pi Zero 2 W -laitteelle (IQAudio 
 
 ## Teknologia
 
-- **Web:** Node.js (Express), HTTPS (oma CA)
+- **Web:** Node.js (Express), HTTPS (oma varmenne)
 - **Välityspalvelin:** nginx (HTTPS → Node)
 - **Ääni:** ALSA (IQaudIO Codec Zero / DA7213), Darkice (MP3/Ogg → Icecast)
 - **WiFi-hotspot:** Python, Flask (AP-tila, verkkojen lisäys selaimella)
@@ -34,7 +34,7 @@ Konfigurointi (`.env`) ja käyttö: **[docs/ASENNUS.md](docs/ASENNUS.md)**.
 ## Turvallisuus
 
 - Salasanat ja palvelinasetukset säilytetään paikallisesti `.env`-tiedostossa (ks. `.env.example`).
-- Selain voi varoittaa HTTPS-yhteydestä, kunnes asennat CA-sertifikaatin (ohje asennusdokumentissa).
+- Selain voi varoittaa HTTPS-yhteydestä, kunnes asennat varmenteen (lataa Järjestelmä-välilehdeltä ja asenna selaimeen; ohje [docs/ASENNUS.md](docs/ASENNUS.md)).
 
 ## Lisenssi
 

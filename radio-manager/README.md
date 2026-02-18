@@ -7,8 +7,8 @@ Web-käyttöliittymä internet-radiolähetyksen ohjaukseen Raspberry Pi Zero 2 W
 - **Lähetys:** Lähetyksen ohjaus kytkimellä tai Web UI -napilla
 - **Lähetyksen asetukset:** Bittinopeus, näytteenottotaajuus, kanavat, äänilähde. Palvelin ja salasana asetetaan .env-tiedostoon
 - **Ääni:** Mikseriasetukset, tallenna ja palauta äänitila
-- **Järjestelmä:** Varmuuskopio ja palautus (JSON, paikalliset)
-- **HTTPS** paikallisilla sertifikaateilla (asenna CA selaimessa varoitusten poistamiseksi)
+- **Järjestelmä:** Varmuuskopio ja palautus (JSON, paikalliset); HTTPS-varmenne ladattavissa asennettavaksi selaimessa
+- **HTTPS** paikallisilla sertifikaateilla (varmenne ladattavissa Järjestelmä-välilehdeltä)
 
 ## Vaatimukset
 
@@ -28,8 +28,8 @@ Web-käyttöliittymä internet-radiolähetyksen ohjaukseen Raspberry Pi Zero 2 W
    ```
 3. Luo .env (palvelin ja salasana): `cp .env.example ~/.radio-manager/.env` ja täytä arvot.
 4. Käynnistä: `sudo systemctl start radio-manager`
-5. Avaa selaimessa: **https://raspberrypizero.local:8443** (tai https://\<Pi-IP\>:8443)
-6. Selainvaroituksen poistamiseksi: asenna CA-sertifikaatti (ohje projektin juuren docs/ASENNUS.md)
+5. Avaa selaimessa: **https://raspberrypi.local:8443** (tai https://\<Pi-IP\>:8443)
+6. Selainvaroituksen poistamiseksi: Järjestelmä-välilehdeltä lataa varmenne ja asenna se selaimeen (ohje: docs/ASENNUS.md)
 
 ## Konfiguraatio
 

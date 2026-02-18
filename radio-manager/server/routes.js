@@ -4,10 +4,13 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const crypto = require('crypto');
+const { spawnSync, spawn } = require('child_process');
 const darkiceConfig = require('./darkice-config');
 const darkiceControl = require('./darkice-control');
 const appConfig = require('./app-config');
+const config = require('./config');
 const streamingMode = require('./streaming-mode');
 const muteControl = require('./mute-control');
 const alsa = require('./alsa');
@@ -16,6 +19,89 @@ const { validate: validateDarkice } = require('./validate-darkice');
 const logger = require('./logger');
 
 const router = express.Router();
+
+/** Check if string looks like IPv4 or IPv6. */
+function isIp(host) {
+  if (!host || typeof host !== 'string') return false;
+  const trimmed = host.trim();
+  if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(trimmed)) return true;
+  if (trimmed.includes(':')) return true; // simplistic IPv6
+  return false;
+}
+
+/** Get primary non-internal IPv4 from server. */
+function getPrimaryIpv4() {
+  const nets = os.networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const iface of nets[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) return iface.address;
+    }
+  }
+  return '';
+}
+
+/**
+ * Copy server certs to nginx ssl dir and reload nginx.
+ * Errors are logged but not thrown – cert download should still succeed
+ * even if nginx is not installed.
+ */
+function reloadNginxCerts(certDir) {
+  const NGINX_SSL_DIR = '/etc/nginx/ssl';
+  const serverPem = path.join(certDir, 'server.pem');
+  const serverKey = path.join(certDir, 'server.key');
+
+  // Use the pre-installed helper script when available (from install.sh)
+  const helperScript = '/usr/local/bin/streampi-reload-nginx-certs';
+  if (fs.existsSync(helperScript)) {
+    const r = spawnSync('sudo', [helperScript], { stdio: 'ignore' });
+    if (r.status === 0) { logger.info('nginx reloaded via helper script'); return; }
+    logger.warn('nginx helper script failed, falling back to direct commands');
+  }
+
+  // Fallback: direct sudo commands (requires matching sudoers rules)
+  spawnSync('sudo', ['mkdir', '-p', NGINX_SSL_DIR], { stdio: 'ignore' });
+  const cp = spawnSync('sudo', ['cp', serverPem, serverKey, NGINX_SSL_DIR + '/'], { stdio: 'ignore' });
+  if (cp.status !== 0) {
+    logger.warn('Could not copy certs to nginx ssl dir – nginx may need manual update');
+    return;
+  }
+  const reload = spawnSync('sudo', ['systemctl', 'reload', 'nginx'], { stdio: 'ignore' });
+  if (reload.status === 0) {
+    logger.info('nginx reloaded with new certs');
+  } else {
+    logger.warn('nginx reload failed or nginx not running');
+  }
+}
+
+/** Read server cert and return { hostname, hostnames, ips } for display. */
+function getCertInfo() {
+  const certDir = path.join(config.APP_DATA_DIR, 'certs');
+  const serverPem = path.join(certDir, 'server.pem');
+  if (!fs.existsSync(serverPem)) return { hasCert: false };
+  try {
+    const pem = fs.readFileSync(serverPem, 'utf8');
+    const cert = new crypto.X509Certificate(pem);
+    const subject = cert.subject || '';
+    const cnMatch = subject.match(/CN\s*=\s*([^,/]+)/);
+    const hostname = cnMatch ? cnMatch[1].trim() : '';
+    const hostnames = [];
+    const ips = [];
+    const san = cert.subjectAltName || '';
+    san.split(',').forEach((part) => {
+      const p = part.trim();
+      const colon = p.indexOf(':');
+      if (colon === -1) return;
+      const type = p.slice(0, colon).trim();
+      const value = p.slice(colon + 1).trim();
+      if (type === 'DNS') hostnames.push(value);
+      else if (type === 'IP Address' || type === 'IP') ips.push(value);
+    });
+    return { hasCert: true, hostname, hostnames, ips };
+  } catch (e) {
+    logger.warn('Could not read cert info', { error: e.message });
+    return { hasCert: false };
+  }
+}
 
 // ---------- Auth (session-based) ----------
 router.get('/api/auth/status', (req, res) => {
@@ -336,6 +422,86 @@ router.post('/api/backup/restore', async (req, res) => {
     return res.status(400).json({ error: errMsg, errors: result.errors });
   } catch (e) {
     logger.error('Backup restore failed', { error: e.message });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ---------- HTTPS certificate: info, download existing, or regenerate and download ----------
+router.get('/api/certs/info', (req, res) => {
+  try {
+    const info = getCertInfo();
+    res.json(info);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.get('/api/certs/ca', (req, res) => {
+  try {
+    const certDir = path.join(config.APP_DATA_DIR, 'certs');
+    const caPath = path.join(certDir, 'ca', 'ca.pem');
+    if (!fs.existsSync(caPath)) {
+      return res.status(404).json({ error: 'Varmenteetta ei ole. Luo uusi varmenne ensin.' });
+    }
+    res.setHeader('Content-Type', 'application/x-pem-file');
+    res.setHeader('Content-Disposition', 'attachment; filename="StreamPi-varmenne.pem"');
+    res.sendFile(caPath);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/api/certs/download-ca', (req, res) => {
+  try {
+    // Always include both hostname.local (mDNS) and primary IP so both URLs work.
+    // If system hostname is an IP (misconfigured), use a fixed .local name so cert still has a DNS entry.
+    const rawHost = (os.hostname() || 'raspberrypi').trim();
+    const certHostname = isIp(rawHost)
+      ? 'streampi.local'
+      : (rawHost.endsWith('.local') ? rawHost : rawHost + '.local');
+    const certIp = getPrimaryIpv4();
+    const certDir = path.join(config.APP_DATA_DIR, 'certs');
+    const scriptPath = path.join(__dirname, '..', 'scripts', 'generate-certs.js');
+    const env = {
+      ...process.env,
+      REGENERATE_CA: '1',
+      CERT_HOSTNAME: certHostname,
+      CERT_IP: certIp,
+      RADIO_MANAGER_DATA: config.APP_DATA_DIR,
+    };
+    const out = spawnSync(process.execPath, [scriptPath, certDir], {
+      env,
+      cwd: path.join(__dirname, '..'),
+      encoding: 'utf8',
+      timeout: 60000,
+    });
+    if (out.status !== 0) {
+      logger.error('Certificate generation failed', { stderr: out.stderr, stdout: out.stdout });
+      return res.status(500).json({ error: 'Varmennegenerointi epäonnistui. Tarkista lokit.' });
+    }
+    const caPath = path.join(certDir, 'ca', 'ca.pem');
+    if (!fs.existsSync(caPath)) {
+      return res.status(500).json({ error: 'Varmennetiedostoa ei luotu.' });
+    }
+    const filename = 'StreamPi-varmenne.pem';
+    res.setHeader('Content-Type', 'application/x-pem-file');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    // Copy new certs to nginx and reload nginx BEFORE restarting ourselves.
+    // (systemctl restart kills the current process, so nginx reload must come first.)
+    reloadNginxCerts(certDir);
+
+    res.sendFile(caPath, (err) => {
+      if (err) logger.error('Send ca.pem failed', { error: err.message });
+      // Restart radio-manager after file is sent, in a detached process with a small
+      // delay so the HTTP response fully flushes before this process dies.
+      const child = spawn('sudo', ['systemctl', 'restart', 'radio-manager.service'], {
+        detached: true,
+        stdio: 'ignore',
+      });
+      child.unref();
+    });
+  } catch (e) {
+    logger.error('Download CA failed', { error: e.message });
     res.status(500).json({ error: e.message });
   }
 });

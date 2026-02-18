@@ -96,7 +96,7 @@ cd ~/radio-manager
 ./scripts/install.sh
 ```
 
-Skripti kysyy: **hostname** (sertifikaattia varten), **IP-osoite(et)** (pilkulla erotettuna), **käyttäjä** (jolla palvelut ajetaan), **web-kirjautuminen** (vapaaehtoinen) ja **ALSA-äänikortti** (0 tai 1; IQaudIO on usein kortti 1). Arvot tallentuvat `install.conf`:iin.
+Skripti kysyy: **hostname**, **IP-osoite(et)** (pilkulla erotettuna), **käyttäjä** (jolla palvelut ajetaan), **web-kirjautuminen** (vapaaehtoinen) ja **ALSA-äänikortti** (0 tai 1; IQaudIO on usein kortti 1). Arvot tallentuvat `install.conf`:iin. HTTPS-varmenne luodaan asennuksessa vain jos sitä ei ole; uuden IP/hostname -varmenteen voit ladata Järjestelmä-välilehdeltä.
 
 ---
 
@@ -116,11 +116,9 @@ Lähetyksen palvelin ja salasana täytetään **web-käyttöliittymän Lähetys-
 
 ---
 
-## 5. HTTPS-sertifikaatti ja CA-ohje
+## 5. HTTPS-varmenne
 
-Asennuksen yhteydessä skripti kysyy, haluatko luoda HTTPS-sertifikaatin ja näyttääkö se ohjeet CA-sertifikaatin asentamiseen selaimessa. Ohjeet tulostuvat asennuksen lopuksi.
-
-**Lyhyt ohje:** Kopioi Pi:ltä `~/.radio-manager/certs/ca/ca.pem` omaan koneeseesi ja asenna se selaimen luotettavana juuri-CA:na (Chrome: Asetukset → Turvallisuus → Sertifikaatit → Valtuutetut juurivarmenteen myöntäjät → Tuo). Käynnistä selain uudelleen ja avaa sivun hostnamella tai IP:llä, joka on sertifikaatissa – varoitus katoaa.
+Asennuksen yhteydessä luodaan alkuperäinen HTTPS-varmenne (jos sitä ei ole). **Varmenne selaimen asennettavaksi** saat **Järjestelmä-välilehden** kautta: valitse **"Lataa nykyinen varmenne"** tai **"Luo uusi varmenne ja lataa"**. Varmenne luodaan nykyiselle IP-osoitteelle ja isäntänimelle. Asenna ladattu varmenne selaimeen. Aiemmat varmenteet mitätöityvät uuden luonnin yhteydessä.
 
 ---
 
@@ -237,4 +235,4 @@ Jos `raspberrypi.local` tai vastaava ei resolvdu (mDNS/Avahi):
 | Web-kirjautuminen | **admin** / **streamPi** – vaihda salasana Järjestelmä-välilehdeltä |
 | WiFi-hotspot (AP-tilassa, verkkojen lisäys) | http://10.42.0.1:8080 |
 | Logit | `journalctl -u radio-manager -f` |
-| CA-sertifikaatti | `~/.radio-manager/certs/ca/ca.pem` |
+| HTTPS-varmenne | `~/.radio-manager/certs/ca/ca.pem` (lataus myös Järjestelmä-välilehdeltä) |
