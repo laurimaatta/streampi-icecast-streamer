@@ -301,7 +301,19 @@ router.post('/api/backup/save', (req, res) => {
     const filePath = backup.saveLocalBackup();
     res.json({ ok: true, path: filePath });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    const status = e.code === 'BACKUP_LIMIT' ? 400 : 500;
+    res.status(status).json({ error: e.message });
+  }
+});
+
+router.delete('/api/backup/:name', (req, res) => {
+  try {
+    const name = decodeURIComponent(req.params.name || '');
+    const result = backup.deleteLocalBackup(name);
+    if (!result.ok) return res.status(404).json({ error: result.error });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
   }
 });
 

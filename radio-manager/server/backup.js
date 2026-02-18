@@ -9,6 +9,8 @@ const darkiceConfig = require('./darkice-config');
 const appConfig = require('./app-config');
 const logger = require('./logger');
 
+const MAX_LOCAL_BACKUPS = 5;
+
 function ensureBackupDir() {
   try {
     fs.mkdirSync(BACKUP_DIR, { recursive: true });
@@ -43,15 +45,40 @@ function buildBackupPayload() {
 
 /**
  * Save backup to local file on the Pi. Returns path.
+ * Throws if already at MAX_LOCAL_BACKUPS.
  */
 function saveLocalBackup() {
   ensureBackupDir();
+  const list = listLocalBackups();
+  if (list.length >= MAX_LOCAL_BACKUPS) {
+    const err = new Error(`Enintään ${MAX_LOCAL_BACKUPS} paikallista varmuuskopiota. Poista yksi ennen uuden luomista.`);
+    err.code = 'BACKUP_LIMIT';
+    throw err;
+  }
   const name = `backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
   const filePath = path.join(BACKUP_DIR, name);
   const payload = buildBackupPayload();
   fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf8');
   logger.info('Local backup saved', { path: filePath });
   return filePath;
+}
+
+/**
+ * Delete a local backup by filename. Only allows backup-*.json in BACKUP_DIR.
+ */
+function deleteLocalBackup(name) {
+  if (!name || typeof name !== 'string') throw new Error('Missing backup name');
+  if (!/^backup-[0-9TZ\-]+\.json$/.test(name)) throw new Error('Invalid backup name');
+  const filePath = path.join(BACKUP_DIR, name);
+  const realPath = fs.realpathSync(BACKUP_DIR);
+  const resolved = path.resolve(filePath);
+  if (!resolved.startsWith(realPath + path.sep) && resolved !== realPath) {
+    throw new Error('Invalid path');
+  }
+  if (!fs.existsSync(filePath)) return { ok: false, error: 'File not found' };
+  fs.unlinkSync(filePath);
+  logger.info('Local backup deleted', { path: filePath });
+  return { ok: true };
 }
 
 /**
@@ -132,7 +159,9 @@ module.exports = {
   buildBackupPayload,
   saveLocalBackup,
   listLocalBackups,
+  deleteLocalBackup,
   restoreFromPayload,
   restoreFromLocalFile,
   BACKUP_DIR,
+  MAX_LOCAL_BACKUPS,
 };

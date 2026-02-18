@@ -181,7 +181,10 @@
         </div>
         <hr>
         <h3>Paikalliset varmuuskopiot</h3>
-        <button type="button" id="btnSaveLocal">Luo varmuuskopio nyt</button>
+        <div class="backup-save-row">
+          <button type="button" id="btnSaveLocal">Luo varmuuskopio nyt</button>
+          <span id="backupLimitHint" class="muted small" style="display:none" aria-live="polite">Enintään 5 paikallista varmuuskopiota. Poista yksi ennen uuden luomista.</span>
+        </div>
         <ul id="localBackupList" class="backup-list"></ul>
         <div id="restoreRow" class="restore-row" style="display:none">
           <label>Palauta: <select id="restoreSelect"></select></label>

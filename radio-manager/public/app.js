@@ -37,6 +37,7 @@
     error: 'Virhe: ',
     loadError: 'Latausvirhe: ',
     noBackups: 'Ei paikallisia varmuuskopioita',
+    toastBackupDeleted: 'Varmuuskopio poistettu.',
   };
 
   const ALSA_LABELS = {
@@ -588,26 +589,53 @@
     importFile.value = '';
   });
 
+  function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  const btnSaveLocal = document.getElementById('btnSaveLocal');
+  const backupLimitHint = document.getElementById('backupLimitHint');
+
   async function loadLocalBackups() {
     const list = await fetchJson('/api/backup/list');
     localBackupList.innerHTML = list.length
-      ? list.map((b) => `<li>${b.name} <small>${b.mtime}</small></li>`).join('')
+      ? list.map((b) => `<li><span>${escapeHtml(b.name)}</span> <small>${escapeHtml(b.mtime)}</small> <button type="button" class="btn-delete-backup" data-name="${escapeHtml(b.name)}" title="Poista varmuuskopio">Poista</button></li>`).join('')
       : `<li class="muted">${T.noBackups}</li>`;
     if (list.length) {
       restoreRow.style.display = 'flex';
-      restoreSelect.innerHTML = list.map((b) => `<option value="${b.name}">${b.name}</option>`).join('');
+      restoreSelect.innerHTML = list.map((b) => `<option value="${escapeHtml(b.name)}">${b.name}</option>`).join('');
     } else {
       restoreRow.style.display = 'none';
     }
+    const atLimit = list.length >= 5;
+    btnSaveLocal.disabled = atLimit;
+    backupLimitHint.style.display = atLimit ? 'inline' : 'none';
   }
 
-  document.getElementById('btnSaveLocal').addEventListener('click', async () => {
+  localBackupList.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.btn-delete-backup');
+    if (!btn) return;
+    const name = btn.getAttribute('data-name');
+    if (!name) return;
+    try {
+      await fetchJson(`/api/backup/${encodeURIComponent(name)}`, { method: 'DELETE' });
+      showToast(T.toastBackupDeleted);
+      loadLocalBackups();
+    } catch (err) {
+      showToast(T.error + err.message);
+    }
+  });
+
+  btnSaveLocal.addEventListener('click', async () => {
     try {
       await fetchJson('/api/backup/save', { method: 'POST' });
       showToast(T.toastBackupLocal);
       loadLocalBackups();
     } catch (err) {
-      showToast(T.error + err.message);
+      if (!err.message || !err.message.includes('Enintään 5')) showToast(T.error + err.message);
+      loadLocalBackups();
     }
   });
 
