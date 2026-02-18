@@ -20,9 +20,11 @@
   let alsaDirty = false;
   let lastMuteStatus = { muted: false, mode: 'OFF' };
 
+  let lastStreamActive = false;
+  let lastDarkiceSnapshot = null;
+
   const T = {
     toastSaved: 'Asetukset tallennettu.',
-    toastRestarted: 'Asetukset tallennettu ja lähetys käynnistetty uudelleen.',
     toastMode: 'Tila: ',
     toastStreamStart: 'Lähetys käynnistetty.',
     toastStreamStop: 'Lähetys pysäytetty.',
@@ -41,42 +43,27 @@
   };
 
   const ALSA_LABELS = {
-    'Mic 1': 'Mikrofoni 1',
-    'Mic 2': 'Mikrofoni 2',
     'Aux': 'Linja-sisääntulo',
-    'Mixin PGA': 'Mikserin vahvistus',
+    'Aux Volume': 'Linja-sisääntulo – voimakkuus',
     'ADC HPF': 'Kohinan suodatin',
-    'ADC Gain Ramping': 'Tasainen vahvistuksen muutos',
-    'DAC': 'Toiston voimakkuus',
-    'Headphone': 'Kuulokkeet',
-    'Lineout': 'Linjaulos',
     'ALC': 'Tasonkorjaus',
-    'ALC Anticlip Level': 'Vääristymän eston taso',
-    'ALC Anticlip Mode': 'Vääristymän esto',
+    'ALC Anticlip Level': 'Huippujen rajoituksen taso',
     'ALC Attack Rate': 'Nousunopeus',
-    'ALC Hold Time': 'Pidä-aika',
-    'ALC Integ Attack Rate': 'Tasoituksen nousunopeus',
-    'ALC Integ Release Rate': 'Tasoituksen laskunopeus',
-    'ALC Max Analog Gain': 'Maksimivahvistus (raja)',
-    'ALC Max Attenuation': 'Maksimivaimennus',
+    'ALC Release Rate': 'Laskunopeus',
+    'ALC Hold Time': 'Pitoaika',
     'ALC Max Gain': 'Suurin vahvistus',
     'ALC Max Threshold': 'Yläkynnys',
-    'ALC Min Analog Gain': 'Minimivahvistus',
     'ALC Min Threshold': 'Alakynnys (kohina)',
     'ALC Noise Threshold': 'Kohinan kynnys',
-    'ALC Release Rate': 'Laskunopeus',
-    'Mic 1 Volume': 'Mikrofoni 1 – voimakkuus',
-    'Mic 2 Volume': 'Mikrofoni 2 – voimakkuus',
-    'Aux Volume': 'Linja-sisääntulo – voimakkuus',
-    'Mixin PGA Volume': 'Mikserin vahvistus',
-    'DAC Volume': 'Toisto – voimakkuus',
-    'Headphone Volume': 'Kuulokkeet – voimakkuus',
-    'Lineout Volume': 'Linjaulos – voimakkuus',
   };
 
-  const ALSA_CAPTURE = ['Mic 1', 'Mic 2', 'Aux', 'Mixin PGA', 'ADC HPF', 'ADC Gain Ramping', 'Mic 1 Volume', 'Mic 2 Volume', 'Aux Volume', 'Mixin PGA Volume'];
-  const ALSA_PLAYBACK = ['DAC', 'Headphone', 'Lineout', 'DAC Volume', 'Headphone Volume', 'Lineout Volume'];
-  const ALSA_ALC = ['ALC', 'ALC Anticlip Level', 'ALC Anticlip Mode', 'ALC Attack Rate', 'ALC Hold Time', 'ALC Integ Attack Rate', 'ALC Integ Release Rate', 'ALC Max Analog Gain', 'ALC Max Attenuation', 'ALC Max Gain', 'ALC Max Threshold', 'ALC Min Analog Gain', 'ALC Min Threshold', 'ALC Noise Threshold', 'ALC Release Rate'];
+  const ALSA_CAPTURE = ['Aux', 'Aux Volume'];
+  const ALSA_PLAYBACK = [];
+  const ALSA_ALC = [
+    'ALC', 'ADC HPF', 'ALC Anticlip Level',
+    'ALC Attack Rate', 'ALC Release Rate', 'ALC Hold Time',
+    'ALC Max Gain', 'ALC Max Threshold', 'ALC Min Threshold', 'ALC Noise Threshold',
+  ];
 
   function showToast(msg) {
     const el = document.getElementById('toast');
@@ -238,6 +225,9 @@
     const chkStream = document.getElementById('chkStreamSwitch');
     if (chkStream && chkStream !== document.activeElement) chkStream.checked = useSwitch;
 
+    lastStreamActive = !!(data && data.active);
+    updateDarkiceFormDisabled(lastStreamActive);
+
     return data;
   }
 
@@ -264,6 +254,41 @@
     }
   });
 
+  function getDarkiceFormSnapshot() {
+    const form = formDarkice;
+    const keys = ['server', 'port', 'mountPoint', 'password', 'name', 'bitrate', 'sampleRate', 'channel', 'device'];
+    const o = {};
+    keys.forEach((k) => {
+      const el = form.elements[k];
+      if (el) o[k] = (el.value || '').trim();
+    });
+    return JSON.stringify(o);
+  }
+
+  function isDarkiceDirty() {
+    if (!lastDarkiceSnapshot) return false;
+    return getDarkiceFormSnapshot() !== lastDarkiceSnapshot;
+  }
+
+  function updateDarkiceSaveButton() {
+    const btn = document.getElementById('btnSaveDarkice');
+    if (!btn) return;
+    const dirty = isDarkiceDirty();
+    btn.disabled = !dirty || lastStreamActive;
+  }
+
+  function updateDarkiceFormDisabled(streamActive) {
+    lastStreamActive = streamActive;
+    const inputs = formDarkice.querySelectorAll('input, select, button');
+    inputs.forEach((el) => {
+      if (el.type === 'submit') {
+        el.disabled = streamActive || !isDarkiceDirty();
+      } else {
+        el.disabled = streamActive;
+      }
+    });
+  }
+
   async function loadDarkice() {
     const data = await fetchJson('/api/darkice');
     const fromEnv = data.fromEnv || {};
@@ -274,6 +299,9 @@
       const el = form.elements[k];
       if (el) el.value = cfg[k] ?? '';
     });
+    lastDarkiceSnapshot = getDarkiceFormSnapshot();
+    updateDarkiceSaveButton();
+    updateDarkiceFormDisabled(lastStreamActive);
     const envNote = document.getElementById('envNote');
     if (envNote) envNote.style.display = (fromEnv.server || fromEnv.password) ? 'block' : 'none';
     return data;
@@ -303,6 +331,12 @@
     // If only one device, hide the dropdown (selection is automatic)
     const deviceRow = document.getElementById('deviceRow');
     if (deviceRow) deviceRow.style.display = devices.length <= 1 ? 'none' : '';
+    // Resync snapshot after device normalization so form does not appear dirty
+    if (lastDarkiceSnapshot !== null) {
+      lastDarkiceSnapshot = getDarkiceFormSnapshot();
+      updateDarkiceSaveButton();
+      updateDarkiceFormDisabled(lastStreamActive);
+    }
   }
 
   function switchPanel(id) {
@@ -433,8 +467,23 @@
       form.elements.authCurrentPassword.value = '';
       form.elements.authNewPassword.value = '';
       form.elements.authNewPasswordConfirm.value = '';
+      const authEnabled = cfg.auth && cfg.auth.enabled;
       const btnRemove = document.getElementById('btnAuthRemove');
-      if (btnRemove) btnRemove.style.display = (cfg.auth && cfg.auth.enabled) ? 'inline-block' : 'none';
+      const btnSubmit = document.getElementById('btnAuthSubmit');
+      const titleEl = document.getElementById('authCardTitle');
+      const descEl = document.getElementById('authCardDesc');
+      const currentRow = document.getElementById('authCurrentPasswordRow');
+      if (btnRemove) btnRemove.style.display = authEnabled ? 'inline-block' : 'none';
+      if (btnSubmit) btnSubmit.textContent = authEnabled ? 'Vaihda kirjautumistiedot' : 'Palauta kirjautuminen';
+      if (titleEl) titleEl.textContent = authEnabled ? 'Web-kirjautuminen' : 'Palauta kirjautuminen';
+      if (descEl) {
+        if (authEnabled) {
+          descEl.innerHTML = 'Käyttäjätunnus on aina <strong>admin</strong>. Oletussalasana <strong>streamPi</strong> – vaihda heti omaan.';
+        } else {
+          descEl.textContent = 'Kirjautuminen on pois käytöstä. Aseta salasana ottaaksesi kirjautumisen uudelleen käyttöön.';
+        }
+      }
+      if (currentRow) currentRow.style.display = authEnabled ? '' : 'none';
     } catch (_) {}
   }
 
@@ -442,24 +491,22 @@
   tabAudio.addEventListener('click', () => switchPanel('audio'));
   tabSystem.addEventListener('click', () => switchPanel('system'));
 
+  formDarkice.addEventListener('input', () => {
+    updateDarkiceSaveButton();
+  });
+  formDarkice.addEventListener('change', () => {
+    updateDarkiceSaveButton();
+  });
+
   formDarkice.addEventListener('submit', async (e) => {
     e.preventDefault();
     const payload = Object.fromEntries(new FormData(formDarkice));
     try {
       await fetchJson('/api/darkice', { method: 'PUT', body: JSON.stringify(payload) });
+      lastDarkiceSnapshot = getDarkiceFormSnapshot();
+      updateDarkiceSaveButton();
+      updateDarkiceFormDisabled(lastStreamActive);
       showToast(T.toastSaved);
-    } catch (err) {
-      showToast(T.error + err.message);
-    }
-  });
-
-  document.getElementById('btnRestartAfterSave').addEventListener('click', async () => {
-    const payload = Object.fromEntries(new FormData(formDarkice));
-    try {
-      await fetchJson('/api/darkice', { method: 'PUT', body: JSON.stringify(payload) });
-      await fetchJson('/api/streaming/restart', { method: 'POST' });
-      showToast(T.toastRestarted);
-      loadStreamingStatus();
     } catch (err) {
       showToast(T.error + err.message);
     }
@@ -504,37 +551,18 @@
   document.getElementById('btnRestartWhenSwitch')?.addEventListener('click', onRestartStream);
 
   const ALSA_CONTROL_HINTS = {
-    'Mic 1': 'Mikrofonikanavan 1 voimakkuus. Suurempi arvo = kovempi mikrofoniääni. Pienempi = hiljaisempi.',
-    'Mic 2': 'Mikrofonikanavan 2 voimakkuus. Suurempi arvo = kovempi mikrofoniääni. Pienempi = hiljaisempi.',
-    'Aux': 'Linja-sisääntulon voimakkuus (pääasiallinen säätö lähetykseen). Suurempi arvo = kovempi ääni. Pienempi = hiljaisempi.',
-    'Mixin PGA': 'Mikserin vahvistus ennen muunnosta. Suurempi arvo = vahvempi lähtö. Pienempi = heikompi.',
-    'ADC HPF': 'Suodattaa matalataajuiset huminat ja kohina pois. Päällä = vähemmän kohinaa (suositeltu). Pois = koko taajuuskaista läpi.',
-    'ADC Gain Ramping': 'Päällä = vahvistus muuttuu tasaisesti (ei napsahduksia). Pois = nopeampi vaste.',
-    'DAC': 'Toiston (kuuntelun) voimakkuus. Suurempi = kovempi kuuntelu. Pienempi = hiljaisempi.',
-    'Headphone': 'Kuulokeulostulon voimakkuus. Suurempi = kovempi. Pienempi = hiljaisempi.',
-    'Lineout': 'Linjaulosmenon voimakkuus. Suurempi = kovempi. Pienempi = hiljaisempi.',
-    'ALC': 'Tasonkorjaus tasaa äänenvoimakkuuden automaattisesti. Päällä = tasaisempi ääni (puhe, laulu). Pois = raaka taso.',
-    'ALC Anticlip Level': 'Vääristymän eston taso. Pienempi arvo = tiukempi raja (ääni pysyy hiljempana, ei leikkaa). Suurempi = kovempi ääni sallitaan ennen rajoitusta.',
-    'ALC Anticlip Mode': 'Vääristymän esto. Päällä = estää leikkaantumisen. Pois = ei estoa.',
-    'ALC Attack Rate': 'Kuinka nopeasti tasonkorjaus reagoi äänen nousuun. Suurempi arvo = nopeampi nousu (ääni vahvistuu nopeammin). Pienempi = hitaampi.',
-    'ALC Hold Time': 'Kuinka kauan vahvistus pidetään ennen laskua. Suurempi = pidempi pito. Pienempi = nopeammin laskee hiljaisuuteen.',
-    'ALC Integ Attack Rate': 'Tasonkorjauksen tasoitettu nousunopeus. Suurempi = nopeampi tasoitettu nousu. Pienempi = pehmeämpi nousu.',
-    'ALC Integ Release Rate': 'Tasonkorjauksen tasoitettu laskunopeus. Suurempi = nopeammin vahvistus laskee. Pienempi = hitaampi lasku.',
-    'ALC Max Analog Gain': 'Suurin sallittu vahvistus. Pienempi arvo = vähemmän kohinaa vahvistuu. Suurempi = enemmän vahvistusvaraa.',
-    'ALC Max Attenuation': 'Kuinka paljon tasonkorjaus voi hiljentää kovaa ääntä. Suurempi = voi hiljentää enemmän. Pienempi = vähemmän vaimennusta.',
-    'ALC Max Gain': 'Suurin kokonaisvahvistus. Pienempi = tiukempi yläraja. Suurempi = enemmän vahvistusta sallitaan.',
-    'ALC Max Threshold': 'Taso, josta ylöspäin tasonkorjaus alkaa vaimentaa. Pienempi = vaimentaa jo hiljaisempaa. Suurempi = vain kovaa ääntä vaimentaa.',
-    'ALC Min Analog Gain': 'Minimivahvistus. Suurempi = ääni ei mene tätä hiljaisemmaksi. Pienempi = voi mennä hiljaisemmaksi.',
-    'ALC Min Threshold': 'Alakynnys: vaikuttaa siihen, kuinka paljon taustakohinaa päästetään läpi. Pienempi arvo = vähemmän kohinaa pääsee läpi (tiukempi suodatus). Suurempi arvo = enemmän kohinaa pääsee läpi.',
-    'ALC Noise Threshold': 'Kynnys, josta alaspäin ääntä pidetään kohinana; suurempi arvo voi tarkoittaa tiukempaa suodatusta.',
-    'ALC Release Rate': 'Kuinka nopeasti tasonkorjaus laskee vahvistusta äänen hiljetessä. Suurempi = nopeammin laskee. Pienempi = vahvistus pysyy kauemmin.',
-    'Mic 1 Volume': 'Suurempi arvo = kovempi ääni. Pienempi = hiljaisempi.',
-    'Mic 2 Volume': 'Suurempi arvo = kovempi ääni. Pienempi = hiljaisempi.',
+    'Aux': 'Linja-sisääntulon voimakkuus (pääasiallinen säätö lähetykseen). Suurempi arvo = kovempi ääni.',
     'Aux Volume': 'Suurempi arvo = kovempi linjaääni. Pienempi = hiljaisempi.',
-    'Mixin PGA Volume': 'Suurempi = vahvempi. Pienempi = heikompi.',
-    'DAC Volume': 'Suurempi = kovempi toisto. Pienempi = hiljaisempi.',
-    'Headphone Volume': 'Suurempi = kovempi. Pienempi = hiljaisempi.',
-    'Lineout Volume': 'Suurempi = kovempi. Pienempi = hiljaisempi.',
+    'ADC HPF': 'Suodattaa matalataajuiset huminat ja kohina pois. Päällä = vähemmän kohinaa (suositeltu). Pois = koko taajuuskaista läpi.',
+    'ALC': 'Tasonkorjaus tasaa äänenvoimakkuuden automaattisesti. Päällä = tasaisempi ääni (puhe, laulu). Pois = raaka taso.',
+    'ALC Anticlip Level': 'Määrittää tason, jossa voimakkaat äänihuiput vaimennetaan automaattisesti. Pienempi arvo → rajoitus aktivoituu herkemmin. Suurempi arvo → kovempi ääni sallitaan ennen rajoitusta.',
+    'ALC Attack Rate': 'Kuinka nopeasti tasonkorjaus reagoi äänen nousuun. Suurempi arvo = nopeampi reagointi. Pienempi = hitaampi.',
+    'ALC Release Rate': 'Kuinka nopeasti tasonkorjaus laskee vahvistusta äänen hiljetessä. Suurempi = nopeammin laskee. Pienempi = vahvistus pysyy kauemmin.',
+    'ALC Hold Time': 'Kuinka kauan vahvistus pidetään ennen laskua. Suurempi = pidempi pito. Pienempi = nopeammin laskee.',
+    'ALC Max Gain': 'Suurin kokonaisvahvistus hiljaista ääntä vahvistettaessa. Suurempi = enemmän vahvistusta.',
+    'ALC Max Threshold': 'Taso, josta ylöspäin tasonkorjaus alkaa vaimentaa. Pienempi = vaimentaa jo hiljaisempaa. Suurempi = vain kovaa ääntä vaimentaa.',
+    'ALC Min Threshold': 'Alakynnys: vaikuttaa siihen, kuinka paljon taustakohinaa päästetään läpi. Pienempi arvo = tiukempi suodatus. Suurempi arvo = enemmän kohinaa pääsee läpi.',
+    'ALC Noise Threshold': 'Kynnys, josta alaspäin ääntä pidetään kohinana. Suurempi arvo = tiukempi suodatus.',
   };
 
   function renderAlsaControl(name, c, container) {
@@ -543,27 +571,78 @@
     const max = c.max ?? 127;
     const div = document.createElement('div');
     div.className = 'audio-control';
+    div.dataset.controlName = name;
     const hint = ALSA_CONTROL_HINTS[name];
     if (hint) div.title = hint;
-    const isMono = c.values && c.values.length === 1;
-    const vals = c.values || [0];
+    const eName = name.replace(/"/g, '&quot;');
     let html = `<label>${label}</label>`;
     if (hint) html += `<span class="control-hint">${hint}</span>`;
-    if (isMono || vals.length === 1) {
-      const v = vals[0];
-      const pct = max ? Math.round((v / max) * 100) : 0;
-      html += `<span class="control-value">${v} / ${max} (${pct}%)</span>`;
-      html += `<input type="range" min="${min}" max="${max}" value="${v}" data-name="${name.replace(/"/g, '&quot;')}" data-index="0">`;
+
+    if (c.type === 'enum') {
+      // Enum as slider (items are technical values like '44/fs')
+      const idx = c.values ? c.values[0] : 0;
+      const itemCount = c.items ? c.items.length : (max + 1);
+      const pct = itemCount > 1 ? Math.round((idx / (itemCount - 1)) * 100) : 0;
+      html += `<span class="control-value">${idx + 1} / ${itemCount} (${pct}%)</span>`;
+      html += `<input type="range" min="0" max="${itemCount - 1}" value="${idx}" data-name="${eName}" data-type="enum">`;
+    } else if (c.type === 'switch') {
+      const isOn = c.values[0] === 1;
+      html += `<label class="toggle-label"><input type="checkbox" data-name="${eName}" ${isOn ? 'checked' : ''}><span>${isOn ? 'Päällä' : 'Pois'}</span></label>`;
     } else {
-      html += `<span class="control-value">L: ${vals[0]} R: ${vals[1]}</span>`;
-      html += `<div class="slider-row"><span>L</span><input type="range" min="${min}" max="${max}" value="${vals[0]}" data-name="${name.replace(/"/g, '&quot;')}" data-index="0"></div>`;
-      html += `<div class="slider-row"><span>R</span><input type="range" min="${min}" max="${max}" value="${vals[1]}" data-name="${name.replace(/"/g, '&quot;')}" data-index="1"></div>`;
+      const vals = c.values || [0];
+      if (vals.length === 1) {
+        const v = vals[0];
+        const pct = max ? Math.round((v / max) * 100) : 0;
+        html += `<span class="control-value">${v} / ${max} (${pct}%)</span>`;
+        html += `<input type="range" min="${min}" max="${max}" value="${v}" data-name="${eName}" data-index="0">`;
+      } else {
+        html += `<span class="control-value">L: ${vals[0]} R: ${vals[1]}</span>`;
+        html += `<div class="slider-row"><span>L</span><input type="range" min="${min}" max="${max}" value="${vals[0]}" data-name="${eName}" data-index="0"></div>`;
+        html += `<div class="slider-row"><span>R</span><input type="range" min="${min}" max="${max}" value="${vals[1]}" data-name="${eName}" data-index="1"></div>`;
+      }
     }
+
     div.innerHTML = html;
-    div.querySelectorAll('input[type="range"]').forEach((input) => {
+
+    // Enum slider: send the item string value to amixer
+    div.querySelectorAll('input[type="range"][data-type="enum"]').forEach((input) => {
+      input.addEventListener('input', debounce(async () => {
+        const idx = parseInt(input.value, 10);
+        const items = c.items || [];
+        const itemVal = items[idx] || String(idx);
+        const itemCount = items.length || (max + 1);
+        const pct = itemCount > 1 ? Math.round((idx / (itemCount - 1)) * 100) : 0;
+        const valueSpan = div.querySelector('.control-value');
+        if (valueSpan) valueSpan.textContent = `${idx + 1} / ${itemCount} (${pct}%)`;
+        await fetchJson(`/api/audio/control/${encodeURIComponent(input.dataset.name)}`, {
+          method: 'PUT',
+          body: JSON.stringify({ value: itemVal }),
+        });
+        alsaDirty = true;
+        updateAlsaStateIndicator();
+      }, 300));
+    });
+
+    // Switch: checkbox change
+    div.querySelectorAll('input[type="checkbox"][data-name]').forEach((chk) => {
+      chk.addEventListener('change', async () => {
+        const span = chk.parentElement.querySelector('span');
+        if (span) span.textContent = chk.checked ? 'Päällä' : 'Pois';
+        await fetchJson(`/api/audio/control/${encodeURIComponent(chk.dataset.name)}`, {
+          method: 'PUT',
+          body: JSON.stringify({ value: chk.checked ? 'on' : 'off' }),
+        });
+        alsaDirty = true;
+        updateAlsaStateIndicator();
+        if (chk.dataset.name === 'ALC' || chk.dataset.name === 'ADC HPF') updateAlcDisabledState();
+      });
+    });
+
+    // Volume: range sliders
+    div.querySelectorAll('input[type="range"]:not([data-type="enum"])').forEach((input) => {
       input.addEventListener('input', debounce(async () => {
         const controlName = input.dataset.name;
-        const all = div.querySelectorAll('input[type="range"]');
+        const all = div.querySelectorAll('input[type="range"]:not([data-type="enum"])');
         const values = Array.from(all).map((i) => parseInt(i.value, 10));
         const valueSpan = div.querySelector('.control-value');
         if (values.length === 1) {
@@ -579,13 +658,34 @@
         updateAlsaStateIndicator();
       }, 300));
     });
+
     container.appendChild(div);
   }
 
+  function updateAlcDisabledState() {
+    const alcGroup = document.getElementById('audioControlsALC');
+    if (!alcGroup) return;
+    alcGroup.querySelectorAll('.audio-control').forEach((ctrl) => {
+      const cname = ctrl.dataset.controlName;
+      if (cname === 'ALC' || cname === 'ADC HPF') return;
+      const alcSwitch = alcGroup.querySelector('.audio-control[data-control-name="ALC"] input[type="checkbox"]');
+      const alcOn = alcSwitch ? alcSwitch.checked : true;
+      const disabled = !alcOn;
+      ctrl.classList.toggle('disabled-by-mute', disabled);
+      ctrl.querySelectorAll('input[type="range"], input[type="checkbox"], select').forEach((el) => {
+        el.disabled = disabled;
+      });
+    });
+  }
+
   async function updateAlsaStateIndicator() {
+    const btnStore = document.getElementById('btnStoreAlsa');
+    const btnRestore = document.getElementById('btnRestoreAlsa');
+    if (btnStore) btnStore.disabled = !alsaDirty;
     if (!alsaStateIndicator) return;
     try {
       const { saved } = await fetchJson('/api/audio/state-saved');
+      if (btnRestore) btnRestore.disabled = !alsaDirty || !saved;
       if (alsaDirty) {
         alsaStateIndicator.textContent = 'Äänitila: tallentamatta (muutoksia ei tallennettu)';
       } else {
@@ -593,6 +693,7 @@
       }
     } catch (_) {
       alsaStateIndicator.textContent = '—';
+      if (btnRestore) btnRestore.disabled = true;
     }
   }
 
@@ -605,19 +706,23 @@
     const capture = [];
     const playback = [];
     const alc = [];
-    const HIDE_CONTROLS = ['ADC', 'ADC Volume']; // Ei vaikuta lähetykseen, ei näytetä
+    const allowedSet = new Set([...ALSA_CAPTURE, ...ALSA_PLAYBACK, ...ALSA_ALC]);
     Object.entries(controls).forEach(([name, c]) => {
-      if (!c || HIDE_CONTROLS.includes(name)) return;
-      if (ALSA_ALC.some((k) => name === k || name.startsWith(k + ' '))) alc.push([name, c]);
-      else if (ALSA_CAPTURE.some((k) => name.includes(k))) capture.push([name, c]);
-      else if (ALSA_PLAYBACK.some((k) => name.includes(k))) playback.push([name, c]);
-      else capture.push([name, c]);
+      if (!c || !allowedSet.has(name)) return;
+      if (ALSA_ALC.includes(name)) alc.push([name, c]);
+      else if (ALSA_CAPTURE.includes(name)) capture.push([name, c]);
+      else if (ALSA_PLAYBACK.includes(name)) playback.push([name, c]);
     });
     capture.forEach(([name, c]) => renderAlsaControl(name, c, audioControlsCapture));
     playback.forEach(([name, c]) => renderAlsaControl(name, c, audioControlsPlayback));
     if (audioControlsALC) alc.forEach(([name, c]) => renderAlsaControl(name, c, audioControlsALC));
+    const captureGroup = document.getElementById('alsaGroupCapture');
+    const pbAlcGroup = document.getElementById('alsaGroupPlaybackAndALC');
+    if (captureGroup) captureGroup.style.display = capture.length ? '' : 'none';
+    if (pbAlcGroup) pbAlcGroup.style.display = (playback.length || alc.length) ? '' : 'none';
     await updateAlsaStateIndicator();
     updateCaptureDisabledState();
+    updateAlcDisabledState();
   }
 
   function debounce(fn, ms) {
@@ -632,7 +737,9 @@
     try {
       await fetchJson('/api/audio/apply-defaults', { method: 'POST' });
       showToast('Suositellut asetukset asetettu. Tallenna äänitila alta, jotta ne säilyvät.');
-      loadAudioControls();
+      await loadAudioControls();
+      alsaDirty = true;
+      await updateAlsaStateIndicator();
     } catch (err) {
       showToast(T.error + err.message);
     }
@@ -775,7 +882,7 @@
         showToast('Salasana päivitetty.');
         loadAuthConfig();
       } catch (err) {
-        showToast(T.error + (err.message || (err.error || 'Nykyinen salasana voi olla väärä.')));
+        showToast(T.error + (err.message || (err.error || 'Nykyinen salasana on väärä.')));
       }
     });
   }

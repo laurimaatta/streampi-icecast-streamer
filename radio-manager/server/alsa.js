@@ -49,28 +49,60 @@ function listControls() {
 }
 
 /**
- * Get current value(s) for a control. Returns { name, values: [ ... ], dB: [...] if available }. Optional card override.
+ * Get current value(s) for a simple mixer control.
+ * Handles volume (with optional switch), enum, and pure switch types.
  */
 function getControlWithCard(card, name) {
   const r = amixerWithCard(card, 'get', name);
   if (!r.ok) return null;
-  const values = [];
-  const dB = [];
-  // Limits: 0 - 7 or 0 - 127
-  const limitsMatch = r.out.match(/Limits:\s*(\d+)\s*-\s*(\d+)/);
-  const minVal = limitsMatch ? parseInt(limitsMatch[1], 10) : 0;
-  const maxVal = limitsMatch ? parseInt(limitsMatch[2], 10) : 127;
-  // amixer output: "value=123" or "Front Left: 127 [100%]" / "Mono: 0 [0%]"
-  const reValue = /values?=(\d+)/gi;
-  const reChannel = /:\s*(\d+)\s*\[/g;
-  let m;
-  while ((m = reValue.exec(r.out)) !== null) values.push(parseInt(m[1], 10));
-  if (values.length === 0) {
-    while ((m = reChannel.exec(r.out)) !== null) values.push(parseInt(m[1], 10));
+  const caps = (r.out.match(/Capabilities:\s*(.+)/i) || ['', ''])[1].trim();
+
+  // Enum control: Items list + current Item0
+  if (caps.includes('enum')) {
+    const items = [];
+    // sget format: Items: '44/fs' '88/fs' ...
+    const itemsLineMatch = r.out.match(/Items:\s*(.+)/);
+    if (itemsLineMatch) {
+      const reQuoted = /'([^']+)'/g;
+      let m;
+      while ((m = reQuoted.exec(itemsLineMatch[1])) !== null) items.push(m[1]);
+    }
+    const currentMatch = r.out.match(/Item0:\s*'([^']+)'/);
+    const current = currentMatch ? currentMatch[1] : (items[0] || '');
+    const idx = items.indexOf(current);
+    return { name, type: 'enum', values: [Math.max(0, idx)], items, min: 0, max: items.length - 1, current };
   }
-  const reDb = /dB ([-+]?\d+\.\d+)/g;
-  while ((m = reDb.exec(r.out)) !== null) dB.push(parseFloat(m[1]));
-  return { name, values, dB: dB.length ? dB : undefined, min: minVal, max: maxVal };
+
+  // Volume control (may also have pswitch)
+  const hasVolume = caps.includes('volume');
+  const hasSwitch = caps.includes('pswitch') || caps.includes('cswitch');
+
+  if (hasVolume) {
+    const values = [];
+    const dB = [];
+    const limitsMatch = r.out.match(/Limits:\s*(\d+)\s*-\s*(\d+)/);
+    const minVal = limitsMatch ? parseInt(limitsMatch[1], 10) : 0;
+    const maxVal = limitsMatch ? parseInt(limitsMatch[2], 10) : 127;
+    const reChannel = /:\s*(\d+)\s*\[/g;
+    let m;
+    while ((m = reChannel.exec(r.out)) !== null) values.push(parseInt(m[1], 10));
+    const reDb = /dB ([-+]?\d+\.\d+)/g;
+    while ((m = reDb.exec(r.out)) !== null) dB.push(parseFloat(m[1]));
+    const result = { name, values, dB: dB.length ? dB : undefined, min: minVal, max: maxVal };
+    if (hasSwitch) {
+      result.hasSwitch = true;
+      result.switchOn = /\[on\]/i.test(r.out);
+    }
+    return result;
+  }
+
+  // Pure switch control (no volume)
+  if (hasSwitch) {
+    const isOn = /\[on\]/i.test(r.out);
+    return { name, type: 'switch', values: [isOn ? 1 : 0], min: 0, max: 1 };
+  }
+
+  return null;
 }
 
 function getControl(name) {
@@ -78,7 +110,7 @@ function getControl(name) {
 }
 
 /**
- * Set control value. For single-value: amixer set 'Name' N. For multiple: N,M.
+ * Set control value. For enums, value can be an index or the item string.
  */
 function setControl(name, value) {
   const v = Array.isArray(value) ? value.join(',') : String(value);
@@ -109,13 +141,14 @@ function listCards() {
  * Returns same shape as before: { controlName: { name, values, min, max, ... } }.
  */
 /**
- * Get relevant ALSA controls for a given card. Filters for AUX/ADC/ALSA etc.
- * Returns { controlName: { name, values, min, max, ... } }.
+ * Get relevant ALSA controls for a given card.
+ * Returns { controlName: { name, type?, values, min, max, items?, ... } }.
  */
 function getRelevantControlsForCard(card) {
   const names = listControlsWithCard(card);
   const relevantPatterns = [
     /^Aux/i, /^ADC/i, /^ALC/i, /^Input/i, /^Capture/i, /^PGA/i,
+    /^Mic/i, /^Mixin/i, /^DAC/i, /^Headphone/i, /^Lineout/i,
   ];
   const out = {};
   for (const n of names) {
@@ -254,7 +287,7 @@ function applyIqaudioDefaults() {
     { name: 'ALC Anticlip Level', value: 110 },   // Vääristymän esto, riittävä headroom
     { name: 'ALC Anticlip Mode', value: 1 },     // Anticlip päällä
     { name: 'ALC Attack Rate', value: 2 },       // Nopea reagointi äänen nousuun
-    { name: 'ALC Hold Time', value: 0 },         // Pidä-aika lyhyt
+    { name: 'ALC Hold Time', value: 0 },         // Pitoaika lyhyt
     { name: 'ALC Integ Attack Rate', value: 3 },
     { name: 'ALC Integ Release Rate', value: 4 },
     { name: 'ALC Max Analog Gain', value: 7 },

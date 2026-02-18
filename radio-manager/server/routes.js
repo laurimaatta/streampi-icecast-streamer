@@ -309,7 +309,7 @@ router.get('/api/audio/control/:name', (req, res) => {
 });
 
 router.put('/api/audio/control/:name', (req, res) => {
-  const { value } = req.body; // number or [n, m]
+  const { value } = req.body;
   const r = alsa.setControl(req.params.name, value);
   if (r.ok) res.json({ ok: true }); else res.status(500).json({ error: r.error });
 });

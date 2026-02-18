@@ -109,8 +109,7 @@
           </select></label>
           <div id="deviceRow"><label>Äänilähde <select name="device"></select></label></div>
           <div class="form-actions">
-            <button type="submit">Tallenna asetukset</button>
-            <button type="button" id="btnRestartAfterSave">Tallenna ja käynnistä lähetys uudelleen</button>
+            <button type="submit" id="btnSaveDarkice">Tallenna asetukset</button>
           </div>
         </form>
       </div>
@@ -128,8 +127,8 @@
             <div id="audioControlsCapture" class="audio-controls-grid"></div>
           </div>
           <div class="alsa-group alsa-group-combined" id="alsaGroupPlaybackAndALC">
-            <h3>Äänenlaatu ja automaattinen voimakkuuden säätö</h3>
-            <p class="muted small">Kuuntelu- ja ulosmenotasot sekä voimakkuuden tasaus (puhe, laulu).</p>
+            <h3>Äänenlaatu ja tasonkorjaus</h3>
+            <p class="muted small">Kohinan suodatus, tasonkorjaus ja äänen voimakkuuden automaattinen tasaus (puhe, laulu).</p>
             <div id="audioControlsPlayback" class="audio-controls-grid"></div>
             <div id="audioControlsALC" class="audio-controls-grid"></div>
           </div>
@@ -173,14 +172,16 @@
         <p id="certInstallHint" class="muted small">Asenna ladattu varmenne selaimeen.</p>
       </div>
       <div class="card">
-        <h2>Web-kirjautuminen</h2>
-        <p class="muted small">Käyttäjätunnus on aina <strong>admin</strong>. Oletussalasana <strong>streamPi</strong> – vaihda heti omaan.</p>
+        <h2 id="authCardTitle">Web-kirjautuminen</h2>
+        <p id="authCardDesc" class="muted small">Käyttäjätunnus on aina <strong>admin</strong>. Oletussalasana <strong>streamPi</strong> – vaihda heti omaan.</p>
         <form id="formAuth" class="form-grid">
-          <label>Nykyinen salasana <input type="password" name="authCurrentPassword" placeholder="••••••••" autocomplete="current-password"></label>
+          <div id="authCurrentPasswordRow">
+            <label>Nykyinen salasana <input type="password" name="authCurrentPassword" placeholder="••••••••" autocomplete="current-password"></label>
+          </div>
           <label>Uusi salasana <input type="password" name="authNewPassword" placeholder="••••••••" autocomplete="new-password"></label>
           <label>Uusi salasana uudestaan <input type="password" name="authNewPasswordConfirm" placeholder="••••••••" autocomplete="new-password"></label>
           <div class="form-actions">
-            <button type="submit">Vaihda kirjautumistiedot</button>
+            <button type="submit" id="btnAuthSubmit">Vaihda kirjautumistiedot</button>
             <button type="button" id="btnAuthRemove">Poista kirjautuminen</button>
           </div>
         </form>
