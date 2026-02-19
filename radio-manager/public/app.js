@@ -915,6 +915,8 @@
   async function init() {
     try {
       const authStatus = await fetch(API + '/api/auth/status', { credentials: 'include' }).then((r) => r.json());
+      const btnLogout = document.getElementById('btnLogout');
+      if (btnLogout) btnLogout.style.display = authStatus.authEnabled ? '' : 'none';
       if (authStatus.authEnabled && !authStatus.loggedIn) {
         showLoginOverlay();
         return;
