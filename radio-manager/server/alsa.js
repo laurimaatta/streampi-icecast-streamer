@@ -147,7 +147,7 @@ function listCards() {
 function getRelevantControlsForCard(card) {
   const names = listControlsWithCard(card);
   const relevantPatterns = [
-    /^Aux/i, /^ADC/i, /^ALC/i, /^Input/i, /^Capture/i, /^PGA/i,
+    /^Digital$/i, /^Aux/i, /^ADC/i, /^ALC/i, /^Input/i, /^Capture/i, /^PGA/i,
     /^Mic/i, /^Mixin/i, /^DAC/i, /^Headphone/i, /^Lineout/i,
   ];
   const out = {};
@@ -224,12 +224,24 @@ function storeState(filePath = ALSA_STATE_FILE) {
  * List capture devices (arecord -l) for device dropdown.
  * Returns plughw, id, card, device and a friendly label for UI.
  */
+/**
+ * Virtual capture device with digital master gain (ALSA softvol).
+ * When selected, DarkIce uses this and the "Digital" mixer control applies to all capture.
+ */
+const RADIO_CAPTURE_DEVICE = {
+  id: 'radio_capture',
+  plughw: 'radio_capture',
+  card: '',
+  device: '',
+  label: 'Lähetysäänen vahvistus (digitaalinen tehostus)',
+};
+
 function listCaptureDevices() {
+  const list = [];
   try {
     const r = spawnSync('arecord', ['-l'], { encoding: 'utf8', timeout: 5000 });
     const out = (r.stdout || '').trim();
-    if (r.status !== 0) return [];
-    const devices = [];
+    if (r.status !== 0) return [RADIO_CAPTURE_DEVICE];
     // card N: Name [ShortName], device M: ...
     const cardRe = /card\s+(\d+):\s*(.+?),\s*device\s+(\d+):/g;
     let m;
@@ -241,7 +253,7 @@ function listCaptureDevices() {
       const label = rawName
         ? `Kortti ${cardNum}: ${rawName} (${plughw})`
         : `Kortti ${cardNum}, laite ${devNum} (${plughw})`;
-      devices.push({
+      list.push({
         card: cardNum,
         device: devNum,
         id: `hw:${cardNum},${devNum}`,
@@ -249,13 +261,14 @@ function listCaptureDevices() {
         label,
       });
     }
-    if (devices.length === 0) {
-      devices.push({ card: '0', device: '0', id: 'plughw:0,0', plughw: 'plughw:0,0', label: 'plughw:0,0' });
+    if (list.length === 0) {
+      list.push({ card: '0', device: '0', id: 'plughw:0,0', plughw: 'plughw:0,0', label: 'plughw:0,0' });
     }
-    return devices;
   } catch (_) {
-    return [{ id: 'plughw:0,0', plughw: 'plughw:0,0', card: '0', device: '0', label: 'plughw:0,0' }];
+    list.push({ id: 'plughw:0,0', plughw: 'plughw:0,0', card: '0', device: '0', label: 'plughw:0,0' });
   }
+  // Digitaalinen tehostus ensin (suositus)
+  return [RADIO_CAPTURE_DEVICE, ...list];
 }
 
 /**
@@ -266,44 +279,84 @@ function hasStoredState(filePath = ALSA_STATE_FILE) {
 }
 
 /**
+ * Preload the radio_capture (softvol) PCM so the "Digital" control appears in amixer.
+ * Safe to call at startup; if /etc/asound.conf has no radio_capture, arecord will fail and we ignore.
+ */
+function preloadRadioCapture() {
+  try {
+    const p = require('child_process').spawn('arecord', ['-D', 'radio_capture', '-f', 'S16_LE', '-r', '44100', '-c', '1', '-d', '0'], {
+      stdio: 'ignore',
+      detached: true,
+    });
+    p.unref();
+    setTimeout(() => {
+      try {
+        p.kill('SIGTERM');
+      } catch (_) {}
+    }, 600);
+  } catch (e) {
+    logger.debug('radio_capture preload skipped', { error: e.message });
+  }
+}
+
+/**
+ * Synchronous preload: open radio_capture briefly so "Digital" control is created.
+ * Call before getRelevantControls() when the Digital control is missing (e.g. first time opening Ääni tab).
+ */
+function preloadRadioCaptureSync() {
+  try {
+    spawnSync('arecord', ['-D', 'radio_capture', '-f', 'S16_LE', '-r', '44100', '-c', '1', '-d', '1'], {
+      encoding: 'utf8',
+      timeout: 3000,
+      stdio: 'ignore',
+    });
+  } catch (e) {
+    logger.debug('radio_capture sync preload failed', { error: e.message });
+  }
+}
+
+/**
  * Apply AUX-focused IQaudIO Codec Zero defaults for speech/sermon recording.
  * Focuses on AUX input (line-in), disables/minimizes unused inputs (Mic).
  * Conservative levels to maintain good audio quality with low noise.
  */
 function applyIqaudioDefaults() {
   const defaults = [
-    // AUX (Line-In) - primary input, set volume (switch is part of volume control)
-    { name: 'Aux', value: '70%' },
-    { name: 'Aux ZC', value: 'off' },  // Zero-cross off for faster response
-    { name: 'Aux Gain Ramping', value: 'on' },
-    
-    // ADC (Analog-to-Digital Converter)
-    { name: 'ADC', value: '85%' },
-    { name: 'ADC HPF', value: 'on' },  // High-pass filter on (reduce low-freq noise)
-    { name: 'ADC Gain Ramping', value: 'off' },
-    
-    // ALC (Automatic Level Control) - puheelle/laululle, taustakohinan suodatus
-    { name: 'ALC', value: 'on' },
-    { name: 'ALC Anticlip Level', value: 110 },   // Vääristymän esto, riittävä headroom
-    { name: 'ALC Anticlip Mode', value: 1 },     // Anticlip päällä
-    { name: 'ALC Attack Rate', value: 2 },       // Nopea reagointi äänen nousuun
-    { name: 'ALC Hold Time', value: 0 },         // Pitoaika lyhyt
-    { name: 'ALC Integ Attack Rate', value: 3 },
-    { name: 'ALC Integ Release Rate', value: 4 },
-    { name: 'ALC Max Analog Gain', value: 7 },
-    { name: 'ALC Max Attenuation', value: 12 }, // Enimmäisvaimennus
-    { name: 'ALC Max Gain', value: 7 },
-    { name: 'ALC Max Threshold', value: 127 },
-    { name: 'ALC Min Analog Gain', value: 0 },
-    { name: 'ALC Min Threshold', value: 17 },   // Alle tämän kohinaa vaiennetaan
-    { name: 'ALC Noise Threshold', value: 3 },  // Kohinan kynnys: pieni = enemmän suodatusta
-    { name: 'ALC Release Rate', value: 3 },    // Vapautusnopeus
+    // Digital master gain (softvol): 75 = +9 dB tehostus (testattu toimivaksi lähetystaso)
+    { name: 'Digital', value: '75,75' },
 
-    // Mic inputs - mute/minimize (not used with AUX-only setup)
+    // AUX (Line-In): 58/63 = 92 %, +7.5 dB
+    { name: 'Aux', value: '58,58' },
+    { name: 'Aux ZC', value: 'off' },
+    { name: 'Aux Gain Ramping', value: 'on' },
+
+    // ADC: 108/127 = 85 %, -3 dB
+    { name: 'ADC', value: '108,108' },
+    { name: 'ADC HPF', value: 'on' },
+    { name: 'ADC Gain Ramping', value: 'off' },
+
+    // ALC (tasonkorjaus) – testattu puhe-/lähetyskäyttöön
+    { name: 'ALC', value: 'on' },
+    { name: 'ALC Anticlip Level', value: 110 },
+    { name: 'ALC Anticlip Mode', value: 'off' },
+    { name: 'ALC Attack Rate', value: '2816/fs' },
+    { name: 'ALC Hold Time', value: '31744/fs' },
+    { name: 'ALC Integ Attack Rate', value: '1/4' },
+    { name: 'ALC Integ Release Rate', value: '1/4' },
+    { name: 'ALC Max Analog Gain', value: 7 },
+    { name: 'ALC Max Attenuation', value: 12 },
+    { name: 'ALC Max Gain', value: 12 },
+    { name: 'ALC Max Threshold', value: 55 },
+    { name: 'ALC Min Analog Gain', value: 0 },
+    { name: 'ALC Min Threshold', value: 52 },
+    { name: 'ALC Noise Threshold', value: 52 },
+    { name: 'ALC Release Rate', value: '2816/fs' },
+
+    // Mic – pois käytöstä (AUX-asetuksissa ei tarvita)
     { name: 'Mic 1', value: 'mute' },
     { name: 'Mic 2', value: 'mute' },
-    
-    // Headphone/Lineout - mute (no playback needed)
+
+    // Kuulokkeet/linjaulostulo – pois käytöstä
     { name: 'Headphone', value: 'mute' },
     { name: 'Lineout', value: 'mute' },
   ];
@@ -326,5 +379,7 @@ module.exports = {
   hasStoredState,
   listCaptureDevices,
   applyIqaudioDefaults,
+  preloadRadioCapture,
+  preloadRadioCaptureSync,
   CARD,
 };

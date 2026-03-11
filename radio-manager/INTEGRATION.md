@@ -25,8 +25,8 @@
 
 ## ALSA
 
-- Radio Manager uses `amixer -c 1` (card 1) and `alsactl` for store/restore. Stored state path: `~/.radio-manager/asound.state`.
-- Your existing `asound.conf` / `.asoundrc` are not modified. The UI only reads/writes mixer values and optional state file.
+- Radio Manager uses `amixer -c N` (N = ALSA_CARD) and `alsactl` for store/restore. Stored state path: `~/.radio-manager/asound.state`.
+- **Digitaalinen tehostus:** Asennusskripti kirjoittaa `/etc/asound.conf`:iin virtuaalilaitteen `radio_capture` (ALSA softvol). Kun DarkIcen laite on "Lähetysäänen vahvistus" (radio_capture), Ääni-välilehden säätimellä **Lähetysäänen vahvistus** (Digital) voi nostaa lähetystason (max_dB 18). Suora laite on edelleen valinnainen (esim. plughw:1,0).
 
 ## WiFi / network
 

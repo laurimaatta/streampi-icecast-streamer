@@ -277,7 +277,12 @@ router.get('/api/audio/cards', (req, res) => {
 
 router.get('/api/audio/controls', (req, res) => {
   try {
-    const controls = alsa.getRelevantControls();
+    let controls = alsa.getRelevantControls();
+    // Digital appears only after radio_capture PCM is opened; preload so it shows in Ääni tab
+    if (!controls.Digital) {
+      alsa.preloadRadioCaptureSync();
+      controls = alsa.getRelevantControls();
+    }
     res.json(controls);
   } catch (e) {
     res.status(500).json({ error: e.message });

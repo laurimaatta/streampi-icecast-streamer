@@ -133,4 +133,11 @@ try {
   logger.warn('ALSA restore on startup failed', { error: e.message });
 }
 
+// Preload radio_capture (softvol) so "Digital" master gain control appears in UI
+try {
+  alsa.preloadRadioCapture();
+} catch (e) {
+  logger.debug('radio_capture preload failed', { error: e.message });
+}
+
 start();

@@ -43,6 +43,7 @@
   };
 
   const ALSA_LABELS = {
+    'Digital': 'Lähetysäänen vahvistus',
     'Aux': 'Linja-sisääntulo',
     'Aux Volume': 'Linja-sisääntulo – voimakkuus',
     'ADC HPF': 'Kohinan suodatin',
@@ -57,7 +58,7 @@
     'ALC Noise Threshold': 'Kohinan kynnys',
   };
 
-  const ALSA_CAPTURE = ['Aux', 'Aux Volume'];
+  const ALSA_CAPTURE = ['Digital', 'Aux', 'Aux Volume'];
   const ALSA_PLAYBACK = [];
   const ALSA_ALC = [
     'ALC', 'ADC HPF', 'ALC Anticlip Level',
@@ -551,6 +552,7 @@
   document.getElementById('btnRestartWhenSwitch')?.addEventListener('click', onRestartStream);
 
   const ALSA_CONTROL_HINTS = {
+    'Digital': 'Digitaalinen tehostus koko lähetysäänelle. 0 % = ei muutosta, + = vahvistus, − = vaimennus. Toimii kun lähetyksen laite on "Lähetysäänen vahvistus".',
     'Aux': 'Linja-sisääntulon voimakkuus (pääasiallinen säätö lähetykseen). Suurempi arvo = kovempi ääni.',
     'Aux Volume': 'Suurempi arvo = kovempi linjaääni. Pienempi = hiljaisempi.',
     'ADC HPF': 'Suodattaa matalataajuiset huminat ja kohina pois. Päällä = vähemmän kohinaa (suositeltu). Pois = koko taajuuskaista läpi.',
@@ -588,6 +590,13 @@
     } else if (c.type === 'switch') {
       const isOn = c.values[0] === 1;
       html += `<label class="toggle-label"><input type="checkbox" data-name="${eName}" ${isOn ? 'checked' : ''}><span>${isOn ? 'Päällä' : 'Pois'}</span></label>`;
+    } else if (name === 'Digital') {
+      // Digital master gain: symmetric -50% … 0% … +50% scale (raw 0-100, 50 = 0 dB)
+      const rawVal = (c.values || [50])[0];
+      const displayPct = rawVal - 50;
+      const sign = displayPct > 0 ? '+' : '';
+      html += `<span class="control-value">${sign}${displayPct} %</span>`;
+      html += `<input type="range" min="0" max="${max}" value="${rawVal}" data-name="${eName}" data-type="digital-gain">`;
     } else {
       const vals = c.values || [0];
       if (vals.length === 1) {
@@ -603,6 +612,23 @@
     }
 
     div.innerHTML = html;
+
+    // Digital master gain slider (linked stereo, -50%…+50%)
+    div.querySelectorAll('input[data-type="digital-gain"]').forEach((input) => {
+      input.addEventListener('input', debounce(async () => {
+        const raw = parseInt(input.value, 10);
+        const displayPct = raw - 50;
+        const sign = displayPct > 0 ? '+' : '';
+        const valueSpan = div.querySelector('.control-value');
+        if (valueSpan) valueSpan.textContent = `${sign}${displayPct} %`;
+        await fetchJson(`/api/audio/control/${encodeURIComponent(input.dataset.name)}`, {
+          method: 'PUT',
+          body: JSON.stringify({ value: [raw, raw] }),
+        });
+        alsaDirty = true;
+        updateAlsaStateIndicator();
+      }, 300));
+    });
 
     // Enum slider: send the item string value to amixer
     div.querySelectorAll('input[type="range"][data-type="enum"]').forEach((input) => {
@@ -638,11 +664,11 @@
       });
     });
 
-    // Volume: range sliders
-    div.querySelectorAll('input[type="range"]:not([data-type="enum"])').forEach((input) => {
+    // Volume: range sliders (normal controls, not digital-gain)
+    div.querySelectorAll('input[type="range"]:not([data-type="enum"]):not([data-type="digital-gain"])').forEach((input) => {
       input.addEventListener('input', debounce(async () => {
         const controlName = input.dataset.name;
-        const all = div.querySelectorAll('input[type="range"]:not([data-type="enum"])');
+        const all = div.querySelectorAll('input[type="range"]:not([data-type="enum"]):not([data-type="digital-gain"])');
         const values = Array.from(all).map((i) => parseInt(i.value, 10));
         const valueSpan = div.querySelector('.control-value');
         if (values.length === 1) {

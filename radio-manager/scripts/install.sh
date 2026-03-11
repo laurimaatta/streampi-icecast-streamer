@@ -133,14 +133,40 @@ sudo sed -i "s|__ALSA_CARD__|${ALSA_CARD:-0}|g" /etc/systemd/system/mute-gpio.se
 sudo systemctl daemon-reload
 echo "mute-gpio.service installed (not enabled by default)."
 
-# ALSA: when using card 1 (IQaudIO), set it as system default so Darkice gets the device without conflict
+# ALSA: defaults (when card 1) and digitaalinen tehostus (softvol) kaikille
+# radio_capture = plughw:CARD,0 + softvol, säätimen nimi "Digital" (näkyy Ääni-välilehdellä)
 if [ "$ALSA_CARD" = "1" ]; then
-  echo "ALSA: asetetaan kortti 1 oletukseksi (/etc/asound.conf)..."
+  echo "ALSA: asetetaan kortti 1 oletukseksi ja digitaalinen tehostus (/etc/asound.conf)..."
   sudo tee /etc/asound.conf << 'ASOUNDEOF'
 # StreamPi: IQaudIO (card 1) as default so Darkice and ALSA use it
 defaults.ctl.card 1
 defaults.pcm.card 1
 defaults.pcm.device 0
+
+# Digitaalinen tehostus lähetysäänelle (master gain).
+# resolution 101 → raw 0-100, min_dB -18 … max_dB +18, joten raw 50 = 0 dB.
+pcm.radio_capture {
+  type softvol
+  slave.pcm "plughw:1,0"
+  control { name "Digital" card 1 }
+  min_dB -18.0
+  max_dB 18.0
+  resolution 101
+}
+ASOUNDEOF
+else
+  echo "ALSA: lisätään digitaalinen tehostus (/etc/asound.conf)..."
+  sudo tee /etc/asound.conf << ASOUNDEOF
+# StreamPi: digitaalinen tehostus lähetysäänelle.
+# resolution 101 → raw 0-100, min_dB -18 … max_dB +18, joten raw 50 = 0 dB.
+pcm.radio_capture {
+  type softvol
+  slave.pcm "plughw:${ALSA_CARD},0"
+  control { name "Digital" card $ALSA_CARD }
+  min_dB -18.0
+  max_dB 18.0
+  resolution 101
+}
 ASOUNDEOF
 fi
 

@@ -6,9 +6,9 @@ const fs = require('fs');
 const { DARKICE_CFG, ALSA_CARD } = require('./config');
 const logger = require('./logger');
 
-/** Default capture device so Darkice uses same card as ALSA UI (IQaudIO is often card 1). */
+/** Default capture device: radio_capture = digitaalinen tehostus (softvol); vaihtoehto suora plughw. */
 function defaultDevice() {
-  return `plughw:${ALSA_CARD || '0'},0`;
+  return 'radio_capture';
 }
 
 /** Values from .env override config file for these keys. */
