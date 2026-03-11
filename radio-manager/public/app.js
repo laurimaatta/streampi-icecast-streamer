@@ -558,12 +558,12 @@
     'ADC HPF': 'Suodattaa matalataajuiset huminat ja kohina pois. Päällä = vähemmän kohinaa (suositeltu). Pois = koko taajuuskaista läpi.',
     'ALC': 'Tasonkorjaus tasaa äänenvoimakkuuden automaattisesti. Päällä = tasaisempi ääni (puhe, laulu). Pois = raaka taso.',
     'ALC Anticlip Level': 'Määrittää tason, jossa voimakkaat äänihuiput vaimennetaan automaattisesti. Pienempi arvo → rajoitus aktivoituu herkemmin. Suurempi arvo → kovempi ääni sallitaan ennen rajoitusta.',
-    'ALC Attack Rate': 'Kuinka nopeasti tasonkorjaus reagoi äänen nousuun. Suurempi arvo = nopeampi reagointi. Pienempi = hitaampi.',
-    'ALC Release Rate': 'Kuinka nopeasti tasonkorjaus laskee vahvistusta äänen hiljetessä. Suurempi = nopeammin laskee. Pienempi = vahvistus pysyy kauemmin.',
+    'ALC Attack Rate': 'Kuinka nopeasti tasonkorjaus reagoi äänen nousuun. Pienempi arvo = nopeampi reagointi. Suurempi arvo = hitaampi reagointi.',
+    'ALC Release Rate': 'Kuinka nopeasti tasonkorjaus palauttaa vahvistuksen äänen hiljetessä. Pienempi arvo = nopeampi palautuminen. Suurempi arvo = hitaampi palautuminen.',
     'ALC Hold Time': 'Kuinka kauan vahvistus pidetään ennen laskua. Suurempi = pidempi pito. Pienempi = nopeammin laskee.',
     'ALC Max Gain': 'Suurin kokonaisvahvistus hiljaista ääntä vahvistettaessa. Suurempi = enemmän vahvistusta.',
     'ALC Max Threshold': 'Taso, josta ylöspäin tasonkorjaus alkaa vaimentaa. Pienempi = vaimentaa jo hiljaisempaa. Suurempi = vain kovaa ääntä vaimentaa.',
-    'ALC Min Threshold': 'Alakynnys: vaikuttaa siihen, kuinka paljon taustakohinaa päästetään läpi. Pienempi arvo = tiukempi suodatus. Suurempi arvo = enemmän kohinaa pääsee läpi.',
+    'ALC Min Threshold': 'Alakynnys: määrittää tason, jota hiljaisempia ääniä ei enää vahvisteta. Suurempi arvo = tiukempi suodatus (vähemmän kohinaa). Pienempi arvo = enemmän kohinaa pääsee läpi.',
     'ALC Noise Threshold': 'Kynnys, josta alaspäin ääntä pidetään kohinana. Suurempi arvo = tiukempi suodatus.',
   };
 
