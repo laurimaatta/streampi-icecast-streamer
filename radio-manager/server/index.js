@@ -122,6 +122,13 @@ try {
   logger.warn('Could not apply mute mode on startup', { error: e.message });
 }
 
+// Preload radio_capture (softvol) so "Digital" master gain control exists before state restore
+try {
+  alsa.preloadRadioCaptureSync();
+} catch (e) {
+  logger.debug('radio_capture preload failed', { error: e.message });
+}
+
 // Restore ALSA state on startup so saved mixer settings persist across reboots
 try {
   if (alsa.hasStoredState()) {
@@ -131,13 +138,6 @@ try {
   }
 } catch (e) {
   logger.warn('ALSA restore on startup failed', { error: e.message });
-}
-
-// Preload radio_capture (softvol) so "Digital" master gain control appears in UI
-try {
-  alsa.preloadRadioCapture();
-} catch (e) {
-  logger.debug('radio_capture preload failed', { error: e.message });
 }
 
 start();

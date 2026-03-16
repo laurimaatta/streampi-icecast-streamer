@@ -257,7 +257,7 @@
 
   function getDarkiceFormSnapshot() {
     const form = formDarkice;
-    const keys = ['server', 'port', 'mountPoint', 'password', 'name', 'bitrate', 'sampleRate', 'channel', 'device'];
+    const keys = ['server', 'port', 'mountPoint', 'password', 'name', 'bitrate', 'sampleRate', 'channel'];
     const o = {};
     keys.forEach((k) => {
       const el = form.elements[k];
@@ -308,37 +308,7 @@
     return data;
   }
 
-  function deviceLabelForUser(d) {
-    const raw = d.label || d.plughw || d.id || '';
-    if (/IQaudIO|IQ\s*Audio|Pi\s*Codec/i.test(raw)) return 'Äänikortti';
-    return raw;
-  }
 
-  async function loadAudioDevices() {
-    const devices = await fetchJson('/api/audio/devices');
-    const sel = formDarkice.elements.device;
-    sel.innerHTML = devices.map((d) => {
-      const value = (d.plughw || d.id || '').replace(/"/g, '&quot;');
-      const label = deviceLabelForUser(d);
-      return `<option value="${value}">${label.replace(/</g, '&lt;')}</option>`;
-    }).join('');
-    const cfg = await fetchJson('/api/darkice');
-    // Normalize saved device so it matches an option (e.g. hw:1,0 -> plughw:1,0)
-    const want = (cfg.device || '').trim();
-    const normalized = want.replace(/^hw:/, 'plughw:');
-    const opts = Array.from(sel.options);
-    const match = opts.find((o) => o.value === want || o.value === normalized);
-    sel.value = (match ? match.value : opts[0]?.value) || '';
-    // If only one device, hide the dropdown (selection is automatic)
-    const deviceRow = document.getElementById('deviceRow');
-    if (deviceRow) deviceRow.style.display = devices.length <= 1 ? 'none' : '';
-    // Resync snapshot after device normalization so form does not appear dirty
-    if (lastDarkiceSnapshot !== null) {
-      lastDarkiceSnapshot = getDarkiceFormSnapshot();
-      updateDarkiceSaveButton();
-      updateDarkiceFormDisabled(lastStreamActive);
-    }
-  }
 
   function switchPanel(id) {
     [panelStreaming, panelAudio, panelSystem].forEach((p) => {
@@ -552,7 +522,7 @@
   document.getElementById('btnRestartWhenSwitch')?.addEventListener('click', onRestartStream);
 
   const ALSA_CONTROL_HINTS = {
-    'Digital': 'Digitaalinen tehostus koko lähetysäänelle. 0 % = ei muutosta, + = vahvistus, − = vaimennus. Toimii kun lähetyksen laite on "Lähetysäänen vahvistus".',
+    'Digital': 'Digitaalinen tehostus koko lähetysäänelle. 0 % = ei muutosta, + = vahvistus, − = vaimennus.',
     'Aux': 'Linja-sisääntulon voimakkuus (pääasiallinen säätö lähetykseen). Suurempi arvo = kovempi ääni.',
     'Aux Volume': 'Suurempi arvo = kovempi linjaääni. Pienempi = hiljaisempi.',
     'ADC HPF': 'Suodattaa matalataajuiset huminat ja kohina pois. Päällä = vähemmän kohinaa (suositeltu). Pois = koko taajuuskaista läpi.',
@@ -762,8 +732,10 @@
   document.getElementById('btnApplyAlsaDefaults').addEventListener('click', async () => {
     try {
       await fetchJson('/api/audio/apply-defaults', { method: 'POST' });
-      showToast('Suositellut asetukset asetettu. Tallenna äänitila alta, jotta ne säilyvät.');
-      await loadAudioControls();
+      showToast('Suositellut asetukset asetettu. Tallenna äänitila Ääni-välilehdeltä, jotta ne säilyvät.');
+      if (panelAudio && !panelAudio.hidden) {
+        await loadAudioControls();
+      }
       alsaDirty = true;
       await updateAlsaStateIndicator();
     } catch (err) {
@@ -952,7 +924,7 @@
       showLoginOverlay();
       return;
     }
-    Promise.all([loadStreamingStatus(), loadMuteStatus(), loadDarkice(), loadAudioDevices()]).catch((err) => {
+    Promise.all([loadStreamingStatus(), loadMuteStatus(), loadDarkice()]).catch((err) => {
       showToast(T.loadError + err.message);
     });
   }

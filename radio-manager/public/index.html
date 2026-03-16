@@ -107,7 +107,6 @@
             <option value="1">Mono (1 kanava) – suositeltu puheelle</option>
             <option value="2">Stereo (2 kanavaa)</option>
           </select></label>
-          <div id="deviceRow"><label>Äänilähde <select name="device"></select></label></div>
           <div class="form-actions">
             <button type="submit" id="btnSaveDarkice">Tallenna asetukset</button>
           </div>
@@ -134,7 +133,6 @@
           </div>
         </div>
         <div class="btn-group" id="audioButtonGroup">
-          <button type="button" id="btnApplyAlsaDefaults" title="Asettaa suositellut tasot puhe-/lähetyskäyttöön. Tallenna tila alta, jotta asetukset säilyvät.">Palauta suositellut ääniasetukset</button>
           <button type="button" id="btnStoreAlsa" title="Tallentaa nykyiset volyymit ja tasot. Ne otetaan käyttöön seuraavalla käynnistyksellä.">Tallenna äänitila</button>
           <button type="button" id="btnRestoreAlsa" title="Palauttaa aiemmin tallennetut volyymit ja tasot.">Palauta tallennettu äänitila</button>
         </div>
@@ -185,6 +183,11 @@
             <button type="button" id="btnAuthRemove">Poista kirjautuminen</button>
           </div>
         </form>
+      </div>
+      <div class="card">
+        <h2>Oletusasetukset</h2>
+        <p class="muted small">Palauttaa suositellut ääniasetukset puhe- ja lähetyskäyttöön. Tallenna äänitila Ääni-välilehdeltä, jotta asetukset säilyvät.</p>
+        <button type="button" id="btnApplyAlsaDefaults" title="Asettaa suositellut tasot puhe-/lähetyskäyttöön. Tallenna tila Ääni-välilehdeltä, jotta asetukset säilyvät.">Palauta suositellut ääniasetukset</button>
       </div>
       <div class="card">
         <h2>Varmuuskopio ja palautus</h2>
